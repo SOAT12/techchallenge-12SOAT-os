@@ -50,7 +50,7 @@ public class DataSourceConfig {
         } else {
             url = "jdbc:postgresql://localhost:5432/postgres";
             username = "postgres";
-            password = "password";
+            password = "postgres";
         }
 
         driverClassName = "org.postgresql.Driver";

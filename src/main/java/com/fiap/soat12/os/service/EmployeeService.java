@@ -1,0 +1,204 @@
+package com.fiap.soat12.os.service;
+
+import com.fiap.soat12.os.cleanarch.util.CodeGenerator;
+import com.fiap.soat12.os.cleanarch.util.CryptUtil;
+import com.fiap.soat12.os.cleanarch.util.DateUtils;
+import com.fiap.soat12.os.dto.ChangePasswordRequestDTO;
+import com.fiap.soat12.os.dto.ForgotPasswordRequestDTO;
+import com.fiap.soat12.os.dto.LoginRequestDTO;
+import com.fiap.soat12.os.dto.employee.EmployeeRequestDTO;
+import com.fiap.soat12.os.dto.employee.EmployeeResponseDTO;
+import com.fiap.soat12.os.entity.Employee;
+import com.fiap.soat12.os.entity.EmployeeFunction;
+import com.fiap.soat12.os.mapper.EmployeeMapper;
+import com.fiap.soat12.os.repository.EmployeeFunctionRepository;
+import com.fiap.soat12.os.repository.EmployeeRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class EmployeeService {
+    private static final String FALHA_IDENTIFICACAO_MSG = "FALHA NA IDENTIFICAÇÃO: ";
+
+    private final EmployeeRepository employeeRepository;
+    private final EmployeeMapper employeeMapper;
+    private final EmployeeFunctionRepository employeeFunctionRepository;
+
+    private final MailClient mailClient;
+
+    public List<EmployeeResponseDTO> getAllEmployees() {
+        return employeeRepository.findAll().stream()
+                .map(employeeMapper::toEmployeeResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<EmployeeResponseDTO> getAllActiveEmployees() {
+        return employeeRepository.findAllByActiveTrue().stream()
+                .map(employeeMapper::toEmployeeResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<EmployeeResponseDTO> getEmployeeById(Long id) {
+        return employeeRepository.findById(id)
+                .map(employeeMapper::toEmployeeResponseDTO);
+    }
+
+    @Transactional
+    public EmployeeResponseDTO createEmployee(EmployeeRequestDTO requestDTO) {
+        EmployeeFunction function = employeeFunctionRepository.findById(requestDTO.getEmployeeFunctionId())
+                .orElseThrow(() -> new IllegalArgumentException("Função não encontrada"));
+        Employee employee = employeeMapper.toEmployee(requestDTO, function);
+        employee.setCreatedAt(new Date());
+        employee.setUpdatedAt(new Date());
+        employee.setActive(true);
+        employee.setUseTemporaryPassword(false);
+        Employee saved = employeeRepository.save(employee);
+        return employeeMapper.toEmployeeResponseDTO(saved);
+    }
+
+    @Transactional
+    public Optional<EmployeeResponseDTO> updateEmployee(Long id, EmployeeRequestDTO requestDTO) {
+        return employeeRepository.findById(id).map(existing -> {
+            EmployeeFunction function = employeeFunctionRepository.findById(requestDTO.getEmployeeFunctionId())
+                    .orElseThrow(() -> new IllegalArgumentException("Função não encontrada"));
+            existing.setCpf(requestDTO.getCpf());
+            existing.setName(requestDTO.getName());
+            existing.setPhone(requestDTO.getPhone());
+            existing.setEmail(requestDTO.getEmail());
+            existing.setActive(requestDTO.getActive());
+            existing.setEmployeeFunction(function);
+            existing.setUpdatedAt(new Date());
+            Employee updated = employeeRepository.save(existing);
+            return employeeMapper.toEmployeeResponseDTO(updated);
+        });
+    }
+
+    @Transactional
+    public boolean inactivateEmployee(Long id) {
+        return employeeRepository.findById(id).map(employee -> {
+            employee.setActive(false);
+            employee.setUpdatedAt(new Date());
+            employee.setUpdatedAt(new Date());
+
+            employeeRepository.save(employee);
+            return true;
+        }).orElse(false);
+    }
+
+    @Transactional
+    public boolean activateEmployee(Long id) {
+        return employeeRepository.findById(id).map(employee -> {
+            employee.setActive(true);
+            employee.setUpdatedAt(new Date());
+            employeeRepository.save(employee);
+            return true;
+        }).orElse(false);
+    }
+
+    public void changePassword(Long id, ChangePasswordRequestDTO changePassword) throws Exception {
+
+        if (!changePassword.getNewPassword().equals(changePassword.getConfirmationPassword())) {
+            throw new BadCredentialsException("A nova senha e a confirmação não são iguais.");
+        }
+
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Funcionario nao encontrado"));
+
+        boolean isValid = new BCryptPasswordEncoder().matches(changePassword.getOldPassword(),
+                employee.getPassword());
+
+        if (!isValid) {
+            throw new BadCredentialsException("A senha antiga está incorreta.");
+        }
+
+        boolean newPasswordIsDiferent = !new BCryptPasswordEncoder().matches(
+                changePassword.getNewPassword(),
+                employee.getPassword());
+
+        if (!newPasswordIsDiferent) {
+            throw new BadCredentialsException("A nova senha nao pode ser igual a antiga.");
+        }
+
+        employee.setPassword(CryptUtil.bcrypt(changePassword.getNewPassword()));
+
+        employeeRepository.save(employee);
+    }
+
+    public void forgotPassword(ForgotPasswordRequestDTO forgotPassword) throws Exception {
+
+        String tempPassword = CodeGenerator.generateCode().toLowerCase();
+
+        Employee employee = employeeRepository.findByCpf(forgotPassword.getCpf())
+                .orElseThrow(() -> new UsernameNotFoundException(FALHA_IDENTIFICACAO_MSG + forgotPassword.getCpf()));
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("message", tempPassword);
+        String subject = "Redefinição de Senha";
+
+        mailClient.sendMail(employee.getEmail(), subject, "mailTemplate", variables);
+
+        employee.setTemporaryPassword(CryptUtil.bcrypt(tempPassword));
+        employee.setPasswordValidity(DateUtils.toLocalDateTime(DateUtils.getCurrentDate()));
+        employee.setUseTemporaryPassword(true);
+
+        employeeRepository.save(employee);
+    }
+
+    public void authTemporaryPassword(LoginRequestDTO loginRequest) throws Exception {
+
+        Employee employee = employeeRepository.findByCpf(loginRequest.getCpf())
+                .orElseThrow(() -> new UsernameNotFoundException(FALHA_IDENTIFICACAO_MSG + loginRequest.getCpf()));
+
+        Date passwordValidity = DateUtils.toDate(employee.getPasswordValidity());
+
+        if (employee.getTemporaryPassword() == null || employee.getTemporaryPassword().isEmpty()
+                || passwordValidity == null
+                || DateUtils.minutesDiff(DateUtils.getCurrentDate(), passwordValidity) >= 600) {
+
+            employee.setTemporaryPassword("");
+            employee.setPasswordValidity(null);
+            employee.setUseTemporaryPassword(false);
+
+            employeeRepository.save(employee);
+
+            throw new Exception();
+        }
+    }
+
+    public void authenticatedTemporaryPassword(LoginRequestDTO loginRequest, Boolean usedTmp) throws Exception {
+
+        Employee employee = employeeRepository.findByCpf(loginRequest.getCpf())
+                .orElseThrow(() -> new UsernameNotFoundException(FALHA_IDENTIFICACAO_MSG + loginRequest.getCpf()));
+
+        if (usedTmp) {
+            employee.setPassword(CryptUtil.bcrypt(loginRequest.getPassword()));
+        }
+        employee.setTemporaryPassword("");
+        employee.setPasswordValidity(null);
+        employee.setUseTemporaryPassword(false);
+
+        employeeRepository.save(employee);
+    }
+
+    public void authenticatedOldPassword(LoginRequestDTO loginRequest) throws Exception {
+
+        Employee employee = employeeRepository.findByCpf(loginRequest.getCpf())
+                .orElseThrow(() -> new UsernameNotFoundException(FALHA_IDENTIFICACAO_MSG + loginRequest.getCpf()));
+
+        employee.setPassword(CryptUtil.bcrypt(loginRequest.getPassword()));
+        employee.setTemporaryPassword("");
+        employee.setPasswordValidity(null);
+        employee.setUseTemporaryPassword(false);
+
+        employeeRepository.save(employee);
+    }
+
+}

@@ -1,0 +1,47 @@
+package com.fiap.soat12.os.config;
+
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+//Lembrar de trocar a url la no deployment do kubernets sempre que mudar.
+@Configuration
+@OpenAPIDefinition(
+        servers = {
+                @Server(
+                        url = "${openapi.service.url:/}",
+                        description = "Servidor de Produção (API Gateway)"
+                )
+        }
+)
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+            .info(new Info()
+                .title("API de Gerenciamento de Oficina")
+                .version("1.0")
+                .description("API RESTful para gerenciar oficina")
+                .contact(new Contact()
+                    .name("SOAT12 - Tech Challenge - Group 7"))
+                .license(new License()
+                    .name("Apache 2.0")
+                    .url("http://springdoc.org")))
+            // Adicione a definição de segurança aqui
+            .components(new Components()
+                .addSecuritySchemes("bearerAuth", new SecurityScheme()
+                    .type(SecurityScheme.Type.HTTP)
+                    .scheme("bearer")
+                    .bearerFormat("JWT")))
+            // Aplica a segurança globalmente
+            .addSecurityItem(new io.swagger.v3.oas.models.security.SecurityRequirement().addList("bearerAuth"));
+    }
+}

@@ -1,0 +1,21 @@
+package com.fiap.soat12.os.dto.vehicle;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class VehicleResponseDTO {
+
+    private Long id;
+    private String licensePlate;
+    private String brand;
+    private String model;
+    private Integer year;
+    private String color;
+    private Boolean active = true;
+}

@@ -1,0 +1,102 @@
+databaseChangeLog:
+    - changeSet:
+        id: create-table-customer
+        author: vinicius.filho
+        changes:
+          - sqlFile:
+              path: customer/create-table-customer.sql
+              relativeToChangelogFile: true
+    - changeSet:
+        id: alter-table-customer-add-column-deleted
+        author: vinicius.filho
+        changes:
+          - sqlFile:
+              path: customer/alter-table-customer-add-column-deleted.sql
+              relativeToChangelogFile: true
+    - changeSet:
+        id: create-table-vehicle_service
+        author: vinicius.filho
+        changes:
+          - sqlFile:
+              path: vehicleservice/create-table-vehicle_service.sql
+              relativeToChangelogFile: true
+
+    - changeSet:
+        id: create-table-vehicle
+        author: caiohnrq
+        changes:
+          - sqlFile:
+              path: vehicle/create-table-vehicle.sql
+              relativeToChangelogFile: true
+    - changeSet:
+        id: create-table-employee-function
+        author: henrique.souza
+        changes:
+          - sqlFile:
+              path: employee/create-table-employee-function.sql
+              relativeToChangelogFile: true
+    - changeSet:
+        id: create-table-employee
+        author: henrique.souza
+        changes:
+          - sqlFile:
+              path: employee/create-table-employee.sql
+              relativeToChangelogFile: true
+    - changeSet:
+        id: create-table-service-order
+        author: caiohnrq
+        changes:
+          - sqlFile:
+              path: serviceOrder/create-table-service-order.sql
+              relativeToChangelogFile: true
+    - changeSet:
+          id: create-table-notification
+          author: vinicius.filho
+          changes:
+              - sqlFile:
+                    path: notification/create-table-notification.sql
+                    relativeToChangelogFile: true
+    - changeSet:
+          id: create-table-notification_employee
+          author: vinicius.filho
+          changes:
+              - sqlFile:
+                    path: notification/create-table-notification_employee.sql
+                    relativeToChangelogFile: true
+    - changeSet:
+        id: insert-into-employee-function-initial-values
+        author: vinicius.filho
+        changes:
+          - sqlFile:
+              path: employee/insert-into-employee-function-initial-values.sql
+              relativeToChangelogFile: true
+    - changeSet:
+        id: alter-table-service-order-column-employee-id
+        author: caiohnrq
+        changes:
+          - sqlFile:
+              path: serviceOrder/alter-table-service-order-column-employee-id.sql
+              relativeToChangelogFile: true
+    - changeSet:
+        id: create-table-service-order-vehicle-service
+        author: caiohnrq
+        changes:
+            - sqlFile:
+                path: serviceOrder/create-table-service-order-vehicle-service.sql
+                relativeToChangelogFile: true
+    - changeSet:
+        id: create-table-service-order-stock
+        author: caiohnrq
+        changes:
+            - sqlFile:
+                path: serviceOrder/create-table-service-order-stock.sql
+                relativeToChangelogFile: true
+    - changeSet:
+        id: alter-table-employee-add-column
+        author: alexpires1
+        changes:
+          - sqlFile:
+              path: employee/alter-table-employee-add-columns.sql
+              relativeToChangelogFile: true
+
+

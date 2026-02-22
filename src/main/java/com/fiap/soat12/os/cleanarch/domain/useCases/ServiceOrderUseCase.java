@@ -7,7 +7,6 @@ import com.fiap.soat12.os.cleanarch.gateway.ServiceOrderGateway;
 import com.fiap.soat12.os.cleanarch.util.Status;
 import com.fiap.soat12.os.dto.serviceorder.ServiceOrderFullCreationRequestDTO;
 import com.fiap.soat12.os.dto.serviceorder.ServiceOrderRequestDTO;
-import com.fiap.soat12.os.dto.stock.StockAvailabilityResponseDTO;
 import com.fiap.soat12.os.service.MailClient;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -32,7 +31,6 @@ public class ServiceOrderUseCase {
     private final NotificationUseCase notificationUseCase;
     private final VehicleUseCase vehicleUseCase;
     private final VehicleServiceUseCase vehicleServiceUseCase;
-    private final StockUseCase stockUseCase;
     private final MailClient mailClient;
     private final MeterRegistry meterRegistry;
 
@@ -54,12 +52,11 @@ public class ServiceOrderUseCase {
         serviceOrder.setEmployee(employee);
 
         mapServicesDetail(requestDTO, serviceOrder);
-        mapStockItemsDetail(requestDTO, serviceOrder);
 
         serviceOrder.setNotes(requestDTO.getNotes());
         serviceOrder.setStatus(Status.OPENED);
         serviceOrder.setTotalValue(
-                serviceOrder.calculateTotalValue(serviceOrder.getServices(), serviceOrder.getStockItems()));
+                serviceOrder.calculateTotalValue(serviceOrder.getServices()));
 
         ServiceOrder savedOrder = serviceOrderGateway.save(serviceOrder);
         notificationUseCase.notifyMechanicAssignedToOS(savedOrder, employee);
@@ -92,21 +89,10 @@ public class ServiceOrderUseCase {
                     });
         }
 
-        if (requestDTO.getStockItems() != null) {
-            requestDTO.getStockItems()
-                    .forEach(stockDTO -> {
-                        Stock stock = stockUseCase.createStock(stockDTO.getToolName(),
-                                stockDTO.getValue(),
-                                stockDTO.getQuantity(),
-                                stockDTO.getToolCategoryId());
-                        serviceOrder.getStockItems().add(stock);
-                    });
-        }
-
         serviceOrder.setNotes(requestDTO.getNotes());
         serviceOrder.setStatus(Status.OPENED);
         serviceOrder.setTotalValue(
-                serviceOrder.calculateTotalValue(serviceOrder.getServices(), serviceOrder.getStockItems()));
+                serviceOrder.calculateTotalValue(serviceOrder.getServices()));
 
         ServiceOrder savedOrder = serviceOrderGateway.save(serviceOrder);
         notificationUseCase.notifyMechanicAssignedToOS(savedOrder, employee);
@@ -130,7 +116,6 @@ public class ServiceOrderUseCase {
                 Status.IN_DIAGNOSIS,
                 Status.WAITING_FOR_APPROVAL,
                 Status.APPROVED,
-                Status.WAITING_ON_STOCK,
                 Status.IN_EXECUTION);
         return serviceOrderGateway.findAllFilteredAndSorted(activeStatuses);
     }
@@ -161,17 +146,7 @@ public class ServiceOrderUseCase {
                         });
                     }
 
-                    existingOrder.getStockItems().clear();
-                    if (requestDTO.getStockItems() != null) {
-                        requestDTO.getStockItems().forEach(itemsDTO -> {
-                            Stock stock = stockUseCase.findStockItemById(itemsDTO.getStockId());
-                            existingOrder.getStockItems().add(stock);
-                        });
-                    }
-
-                    stockUseCase.checkStockAvailability(existingOrder);
-                    existingOrder.setTotalValue(existingOrder.calculateTotalValue(existingOrder.getServices(),
-                            existingOrder.getStockItems()));
+                    existingOrder.setTotalValue(existingOrder.calculateTotalValue(existingOrder.getServices()));
 
                     return serviceOrderGateway.save(existingOrder);
                 }).orElseThrow(() -> new NotFoundException("Ordem de serviço não encontrado"));
@@ -248,17 +223,10 @@ public class ServiceOrderUseCase {
     public ServiceOrder startOrderExecution(Long serviceOrderId) {
         ServiceOrder order = findById(serviceOrderId);
 
-        StockAvailabilityResponseDTO availability = stockUseCase.getStockAvailability(order);
-
-        if (!availability.isAvailable()) {
-            order.getStatus().waitForStock(order);
-            notificationUseCase.notifyManagersOutOfStock(order);
-        } else {
-            order.getStatus().execute(order);
-            Employee employee = this.findMostAvailableEmployee();
-            order.setEmployee(employee);
-            notificationUseCase.notifyMechanicAssignedToOS(order, employee);
-        }
+        order.getStatus().execute(order);
+        Employee employee = this.findMostAvailableEmployee();
+        order.setEmployee(employee);
+        notificationUseCase.notifyMechanicAssignedToOS(order, employee);
 
         return serviceOrderGateway.save(order);
     }
@@ -332,18 +300,6 @@ public class ServiceOrderUseCase {
                     .forEach(dto -> {
                         VehicleService vehicleService = vehicleServiceUseCase.getById(dto.getServiceId());
                         order.getServices().add(vehicleService);
-                    });
-        }
-    }
-
-    private void mapStockItemsDetail(ServiceOrderRequestDTO request, ServiceOrder order) {
-        if (request.getStockItems() != null) {
-            request.getStockItems()
-                    .forEach(dto -> {
-                        Stock stock = stockUseCase.findStockItemById(dto.getStockId());
-                        stock.removingStock(dto.getRequiredQuantity());
-                        stock.setQuantity(dto.getRequiredQuantity());
-                        order.getStockItems().add(stock);
                     });
         }
     }

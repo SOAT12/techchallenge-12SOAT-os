@@ -44,13 +44,6 @@ public class ServiceOrderPresenter {
                                                 serviceItem.getValue()))
                                 .collect(Collectors.toList());
 
-                List<ServiceOrderResponseDTO.StockItemDetailDTO> stockItemsMap = order.getStockItems().stream().map(
-                                stockItem -> new ServiceOrderResponseDTO.StockItemDetailDTO(
-                                                stockItem.getToolName(),
-                                                stockItem.getQuantity(),
-                                                stockItem.getValue()))
-                                .collect(Collectors.toList());
-
                 ServiceOrderResponseDTO dto = new ServiceOrderResponseDTO();
                 dto.setId(order.getId());
                 dto.setStatus(order.getStatus());
@@ -65,7 +58,6 @@ public class ServiceOrderPresenter {
                 dto.setVehicle(vehicleDTO);
                 dto.setEmployee(attendantDTO);
                 dto.setServices(servicesMap);
-                dto.setStockItems(stockItemsMap);
 
                 return dto;
         }

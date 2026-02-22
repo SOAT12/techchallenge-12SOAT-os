@@ -125,3 +125,10 @@ databaseChangeLog:
           - sqlFile:
               path: stock/alter-table-stock-change-id-type.sql
               relativeToChangelogFile: true
+    - changeSet:
+        id: drop-stock-related-tables
+        author: alexpires1
+        changes:
+          - sqlFile:
+              path: stock/drop-stock-related-tables.sql
+              relativeToChangelogFile: true

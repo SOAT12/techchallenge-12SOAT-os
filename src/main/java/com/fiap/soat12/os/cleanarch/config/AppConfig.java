@@ -192,57 +192,6 @@ public class AppConfig {
     }
 
     @Bean
-    public ToolCategoryRepository toolCategoryDataSource(ToolCategoryJpaRepository toolCategoryJpaRepository) {
-        return new ToolCategoryRepositoryImpl(toolCategoryJpaRepository);
-    }
-
-    @Bean
-    public ToolCategoryGateway toolCategoryGateway(ToolCategoryRepository toolCategoryRepository) {
-        return new ToolCategoryGateway(toolCategoryRepository);
-    }
-
-    @Bean
-    public ToolCategoryUseCase toolCategoryUseCase(ToolCategoryGateway toolCategoryGateway) {
-        return new ToolCategoryUseCase(toolCategoryGateway);
-    }
-
-    @Bean
-    public ToolCategoryPresenter toolCategoryPresenter() {
-        return new ToolCategoryPresenter();
-    }
-
-    @Bean
-    public ToolCategoryController toolCategoryController(ToolCategoryUseCase toolCategoryUseCase,
-            ToolCategoryPresenter toolCategoryPresenter) {
-        return new ToolCategoryController(toolCategoryUseCase, toolCategoryPresenter);
-    }
-
-    @Bean
-    public StockRepository stockDataSource(StockJpaRepository stockJpaRepository) {
-        return new StockRepositoryImpl(stockJpaRepository);
-    }
-
-    @Bean
-    public StockGateway stockGateway(StockRepository stockRepository) {
-        return new StockGateway(stockRepository);
-    }
-
-    @Bean
-    public StockUseCase stockUseCase(StockGateway stockGateway, ToolCategoryGateway toolCategoryGateway) {
-        return new StockUseCase(stockGateway, toolCategoryGateway);
-    }
-
-    @Bean
-    public StockPresenter stockPresenter(ToolCategoryPresenter toolCategoryPresenter) {
-        return new StockPresenter(toolCategoryPresenter);
-    }
-
-    @Bean
-    public StockController stockController(StockUseCase stockUseCase, StockPresenter stockPresenter) {
-        return new StockController(stockUseCase, stockPresenter);
-    }
-
-    @Bean
     public CustomerMapper customerMapperBean() {
         return new CustomerMapper();
     }
@@ -263,18 +212,12 @@ public class AppConfig {
     }
 
     @Bean
-    public StockMapper stockMapper() {
-        return new StockMapper();
-    }
-
-    @Bean
     public ServiceOrderMapper serviceOrderMapper(
             CustomerMapper customerMapper,
             VehicleMapper vehicleMapper,
             EmployeeMapper employeeMapper,
-            VehicleServiceMapper vehicleServiceMapper,
-            StockMapper stockMapper) {
-        return new ServiceOrderMapper(customerMapper, vehicleMapper, employeeMapper, vehicleServiceMapper, stockMapper);
+            VehicleServiceMapper vehicleServiceMapper) {
+        return new ServiceOrderMapper(customerMapper, vehicleMapper, employeeMapper, vehicleServiceMapper);
     }
 
     @Bean
@@ -300,11 +243,10 @@ public class AppConfig {
             NotificationUseCase notificationUseCase,
             VehicleUseCase vehicleUseCase,
             VehicleServiceUseCase vehicleServiceUseCase,
-            StockUseCase stockUseCase,
             MailClient mailClient,
             MeterRegistry meterRegistry) {
         return new ServiceOrderUseCase(serviceOrderGateway, employeeUseCase, customerUseCase, notificationUseCase,
-                vehicleUseCase, vehicleServiceUseCase, stockUseCase, mailClient, meterRegistry);
+                vehicleUseCase, vehicleServiceUseCase, mailClient, meterRegistry);
     }
 
     @Bean

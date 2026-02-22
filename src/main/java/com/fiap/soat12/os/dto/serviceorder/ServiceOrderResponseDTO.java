@@ -27,8 +27,6 @@ public class ServiceOrderResponseDTO {
 
     private List<ServiceItemDetailDTO> services;
 
-    private List<StockItemDetailDTO> stockItems;
-
     @Getter
     @Setter
     @NoArgsConstructor
@@ -67,13 +65,4 @@ public class ServiceOrderResponseDTO {
         private BigDecimal value;
     }
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class StockItemDetailDTO {
-        private String toolName;
-        private int quantity;
-        private BigDecimal value;
-    }
 }

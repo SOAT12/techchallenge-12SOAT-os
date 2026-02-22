@@ -35,31 +35,18 @@ public class ServiceOrder {
 
     private Set<VehicleService> services = new HashSet<>();;
 
-    private Set<Stock> stockItems = new HashSet<>();
-
     private Date createdAt;
 
     private Date updatedAt;
 
-    public BigDecimal calculateTotalValue(Set<VehicleService> services, Set<Stock> stockItems) {
+    public BigDecimal calculateTotalValue(Set<VehicleService> services) {
         BigDecimal totalValue = BigDecimal.ZERO;
-        if (services == null && stockItems == null) {
+        if (services == null) {
             return totalValue;
         }
-        if (services != null) {
-            totalValue = totalValue.add(services.stream()
-                    .map(VehicleService::getValue)
-                    .reduce(totalValue, BigDecimal::add));
-        }
-
-        if (stockItems != null) {
-            // Calculate total from stock items (value * quantity)
-            BigDecimal stockTotal = BigDecimal.ZERO;
-            stockTotal = stockItems.stream()
-                    .map(items -> items.getValue().multiply(BigDecimal.valueOf(items.getQuantity())))
-                    .reduce(stockTotal, BigDecimal::add);
-            totalValue = totalValue.add(stockTotal);
-        }
+        totalValue = totalValue.add(services.stream()
+                .map(VehicleService::getValue)
+                .reduce(totalValue, BigDecimal::add));
 
         return totalValue;
     }

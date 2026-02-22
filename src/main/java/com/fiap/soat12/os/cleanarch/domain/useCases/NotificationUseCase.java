@@ -17,7 +17,6 @@ public class NotificationUseCase {
 
     protected static final String MESSAGE_ASSIGNED_TO_OS = "Você foi atribuído à OS %d.";
     protected static final String MESSAGE_OS_APPROVED = "A OS %d foi aprovada.";
-    protected static final String MESSAGE_OUT_OF_STOCK = "As peças da OS %d não estão disponíveis no estoque.";
     protected static final String MESSAGE_OS_COMPLETED = "A OS %d foi finalizada.";
     protected static final String FUNCTION_ATTENDANT_DESCRIPTION = "Atendente";
     protected static final String FUNCTION_MANAGER_DESCRIPTION = "Gestor";
@@ -65,20 +64,6 @@ public class NotificationUseCase {
         notification.setEmployees(Set.of(employee));
         notification.setMessage(String.format(MESSAGE_OS_APPROVED, serviceOrder.getId()));
         notificationGateway.save(notification);
-    }
-
-    // TODO - Adicionar chamada no fluxo de notificar gestor
-    public void notifyManagersOutOfStock(ServiceOrder serviceOrder) {
-        Set<Employee> activeEmployees = new HashSet<>(
-                employeeUseCase.getByEmployeeFunction(FUNCTION_MANAGER_DESCRIPTION));
-
-        if (!activeEmployees.isEmpty()) {
-            Notification notification = new Notification();
-            notification.setServiceOrder(serviceOrder);
-            notification.setEmployees(activeEmployees);
-            notification.setMessage(String.format(MESSAGE_OUT_OF_STOCK, serviceOrder.getId()));
-            notificationGateway.save(notification);
-        }
     }
 
     public void notifyAttendantsOSCompleted(ServiceOrder serviceOrder) {

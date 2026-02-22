@@ -40,12 +40,6 @@ public enum Status {
     },
     APPROVED("Aprovada", 5) {
         @Override
-        public void waitForStock(ServiceOrder order) {
-            order.setStatus(WAITING_ON_STOCK);
-            order.setUpdatedAt(new Date());
-        }
-
-        @Override
         public void execute(ServiceOrder order) {
             order.setStatus(IN_EXECUTION);
             order.setUpdatedAt(new Date());
@@ -58,13 +52,7 @@ public enum Status {
             order.setFinishedAt(new Date());
         }
     },
-    WAITING_ON_STOCK("Aguardando Estoque", 3) {
-        @Override
-        public void execute(ServiceOrder order) {
-            order.setStatus(IN_EXECUTION);
-            order.setUpdatedAt(new Date());
-        }
-    },
+
     IN_EXECUTION("Em Execução", 1) {
         @Override
         public void finish(ServiceOrder order) {
@@ -105,10 +93,6 @@ public enum Status {
 
     public void reject(ServiceOrder order) throws InvalidTransitionException {
         throw new InvalidTransitionException(String.format(MSG_ERROR, REJECTED.name(), this.name()));
-    }
-
-    public void waitForStock(ServiceOrder order) throws InvalidTransitionException {
-        throw new InvalidTransitionException(String.format(MSG_ERROR, WAITING_ON_STOCK.name(), this.name()));
     }
 
     public void execute(ServiceOrder order) throws InvalidTransitionException {

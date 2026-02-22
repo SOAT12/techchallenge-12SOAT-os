@@ -27,7 +27,6 @@ public class ServiceOrderRequestDTO {
 
     private List<VehicleServiceItemDTO> services;
 
-    private List<StockItemDTO> stockItems;
 
     @Getter
     @Setter
@@ -36,17 +35,5 @@ public class ServiceOrderRequestDTO {
     public static class VehicleServiceItemDTO {
         @NotNull
         private Long serviceId;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class StockItemDTO {
-        @NotNull
-        private UUID stockId;
-
-        @NotNull
-        private Integer requiredQuantity;
     }
 }

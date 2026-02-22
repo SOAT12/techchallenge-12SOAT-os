@@ -52,7 +52,4 @@ public class ServiceOrderEntity extends Audit {
     @OneToMany(mappedBy = "serviceOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<ServiceOrderVehicleServiceEntity> services;
 
-    @OneToMany(mappedBy = "serviceOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private Set<ServiceOrderStockEntity> stockItems;
-
 }

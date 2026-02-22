@@ -1,6 +1,5 @@
 package com.fiap.soat12.os.dto.serviceorder;
 
-import com.fiap.soat12.os.cleanarch.infrastructure.web.presenter.dto.StockRequestDTO;
 import com.fiap.soat12.os.dto.customer.CustomerRequestDTO;
 import com.fiap.soat12.os.dto.vehicle.VehicleRequestDTO;
 import com.fiap.soat12.os.dto.vehicleservice.VehicleServiceRequestDTO;
@@ -22,8 +21,6 @@ public class ServiceOrderFullCreationRequestDTO {
     private VehicleRequestDTO vehicle;
 
     private List<VehicleServiceRequestDTO> services;
-
-    private List<StockRequestDTO> stockItems;
 
     private Long employeeId;
 

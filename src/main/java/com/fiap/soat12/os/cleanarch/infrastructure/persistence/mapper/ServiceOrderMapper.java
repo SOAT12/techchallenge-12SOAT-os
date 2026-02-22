@@ -1,7 +1,6 @@
 package com.fiap.soat12.os.cleanarch.infrastructure.persistence.mapper;
 
 import com.fiap.soat12.os.cleanarch.domain.model.ServiceOrder;
-import com.fiap.soat12.os.cleanarch.domain.model.Stock;
 import com.fiap.soat12.os.cleanarch.domain.model.VehicleService;
 import com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +15,6 @@ public class ServiceOrderMapper {
     private final VehicleMapper vehicleMapper;
     private final EmployeeMapper employeeMapper;
     private final VehicleServiceMapper vehicleServiceMapper;
-    private final StockMapper stockMapper;
 
     public ServiceOrder toServiceOrder(ServiceOrderEntity entity) {
         ServiceOrder serviceOrder = ServiceOrder.builder()
@@ -29,7 +27,6 @@ public class ServiceOrderMapper {
                 .vehicle(vehicleMapper.toVehicle(entity.getVehicle()))
                 .employee(employeeMapper.toEmployee(entity.getEmployee()))
                 .services(new HashSet<>())
-                .stockItems(new HashSet<>())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
@@ -41,13 +38,6 @@ public class ServiceOrderMapper {
             }
         }
 
-        if (entity.getStockItems() != null) {
-            for (ServiceOrderStockEntity stockEntity : entity.getStockItems()) {
-                Stock stock = stockMapper.toDomain(stockEntity.getStock());
-                serviceOrder.getStockItems().add(stock);
-            }
-        }
-
         return serviceOrder;
     }
 
@@ -55,8 +45,7 @@ public class ServiceOrderMapper {
             CustomerJpaEntity customer,
             VehicleJpaEntity vehicle,
             EmployeeJpaEntity employee,
-            Set<ServiceOrderVehicleServiceEntity> services,
-            Set<ServiceOrderStockEntity> stockItems) {
+            Set<ServiceOrderVehicleServiceEntity> services) {
 
         ServiceOrderEntity entity = ServiceOrderEntity.builder()
                 .id(serviceOrder.getId())
@@ -68,19 +57,12 @@ public class ServiceOrderMapper {
                 .vehicle(vehicle)
                 .employee(employee)
                 .services(new HashSet<>())
-                .stockItems(new HashSet<>())
                 .build();
 
         for (var service : services) {
             service.setServiceOrder(entity);
             service.getId().setServiceOrderId(serviceOrder.getId());
             entity.getServices().add(service);
-        }
-
-        for (var stock : stockItems) {
-            stock.setServiceOrder(entity);
-            stock.getId().setServiceOrderId(serviceOrder.getId());
-            entity.getStockItems().add(stock);
         }
 
         return entity;

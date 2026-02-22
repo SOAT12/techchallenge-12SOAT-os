@@ -133,8 +133,8 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | \
             docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-      # Build & Push Stock API
-      - name: Build & Push Stock API
+      # Build & Push OS API
+      - name: Build & Push OS API
         run: |
           ECR_REGISTRY=${{ env.ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
@@ -145,7 +145,7 @@ jobs:
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
 
-      # Rollout restart Stock API
-      - name: Rollout Stock API
+      # Rollout restart OS API
+      - name: Rollout OS API
         run: |
-          kubectl rollout restart deployment stock-api-deployment -n default
+          kubectl rollout restart deployment os-api-deployment -n default

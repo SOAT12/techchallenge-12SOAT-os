@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: os-api-deployment
+  labels:
+    app: os-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: os-api
+  template:
+    metadata:
+      labels:
+        app: os-api
+    spec:
+      serviceAccountName: os-sa
+      containers:
+      - name: os-api
+        image: 258531703731.dkr.ecr.us-east-1.amazonaws.com/os-api:latest # This will be your registry image url
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        envFrom:
+          - secretRef:
+              name: os-secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+          timeoutSeconds: 5

@@ -145,6 +145,13 @@ jobs:
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER
 
+      - name: Deploy Manifests
+        run: |
+          kubectl apply -f k8s/os-serviceaccount.yaml
+          kubectl apply -f k8s/os-deployment.yaml
+          kubectl apply -f k8s/os-service.yaml
+          kubectl apply -f k8s/os-hpa.yaml
+
       # Rollout restart OS API
       - name: Rollout OS API
         run: |

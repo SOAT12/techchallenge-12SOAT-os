@@ -32,9 +32,6 @@ class ServiceOrderMapperTest {
     @Mock
     private VehicleServiceMapper vehicleServiceMapper;
 
-    @Mock
-    private StockMapper stockMapper;
-
     @InjectMocks
     private ServiceOrderMapper serviceOrderMapper;
 
@@ -76,7 +73,7 @@ class ServiceOrderMapperTest {
             serviceOrder.setId(1L);
 
             // Act
-            ServiceOrderEntity result = serviceOrderMapper.toServiceOrderEntity(serviceOrder, new CustomerJpaEntity(), new VehicleJpaEntity(), new EmployeeJpaEntity(), new HashSet<>(), new HashSet<>());
+            ServiceOrderEntity result = serviceOrderMapper.toServiceOrderEntity(serviceOrder, new CustomerJpaEntity(), new VehicleJpaEntity(), new EmployeeJpaEntity(), new HashSet<>());
 
             // Assert
             assertNotNull(result);

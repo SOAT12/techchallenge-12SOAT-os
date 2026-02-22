@@ -98,7 +98,6 @@ class ServiceOrderRepositoryImplTest {
             serviceOrder.setVehicle(com.fiap.soat12.os.cleanarch.domain.model.Vehicle.builder().id(1L).build());
             serviceOrder.setEmployee(com.fiap.soat12.os.cleanarch.domain.model.Employee.builder().id(1L).build());
             serviceOrder.setServices(new java.util.HashSet<>());
-            serviceOrder.setStockItems(new java.util.HashSet<>());
 
             when(entityManager.getReference(any(), anyLong())).thenAnswer(i -> {
                 Class<?> clazz = i.getArgument(0);
@@ -111,7 +110,7 @@ class ServiceOrderRepositoryImplTest {
                 }
                 return new Object();
             });
-            when(serviceOrderMapper.toServiceOrderEntity(any(), any(), any(), any(), any(), any())).thenReturn(new ServiceOrderEntity());
+            when(serviceOrderMapper.toServiceOrderEntity(any(), any(), any(), any(), any())).thenReturn(new ServiceOrderEntity());
             when(serviceOrderJpaRepository.save(any())).thenReturn(new ServiceOrderEntity());
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 

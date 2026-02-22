@@ -62,34 +62,39 @@ public enum Status {
     },
     REJECTED("Rejeitada", 8) {
         @Override
-        public void finish(ServiceOrder order) {
-            order.setStatus(FINISHED);
+        public void canceled(ServiceOrder order) {
+            order.setStatus(CANCELED);
             order.setFinishedAt(new Date());
         }
     },
 
     IN_EXECUTION("Em Execução", 1) {
         @Override
-        public void finish(ServiceOrder order) {
-            order.setStatus(FINISHED);
-            order.setFinishedAt(new Date());
-        }
-    },
-    FINISHED("Finalizada", 9) {
-        @Override
         public void waitingPayment(ServiceOrder order) {
             order.setStatus(WAITING_PAYMENT);
+            order.setFinishedAt(new Date());
         }
     },
 
     WAITING_PAYMENT("Aguardando pagamento", 9) {
+
+        @Override
+        public void paymentApproval(ServiceOrder order) {
+            order.setStatus(PAYMENT_APPROVAL);
+            order.setUpdatedAt(new Date());
+        }
+    },
+
+    PAYMENT_APPROVAL("Pagamento Aprovado", 1) {
         @Override
         public void deliver(ServiceOrder order) {
             order.setStatus(DELIVERED);
+            order.setFinishedAt(new Date());
         }
     },
 
     DELIVERED("Entregue", 10),
+
     CANCELED("Cancelada", 7);
 
     Status(String label, int sortOrder) {
@@ -126,16 +131,20 @@ public enum Status {
         throw new InvalidTransitionException(String.format(MSG_ERROR, IN_EXECUTION.name(), this.name()));
     }
 
-    public void finish(ServiceOrder order) throws InvalidTransitionException {
-        throw new InvalidTransitionException(String.format(MSG_ERROR, FINISHED.name(), this.name()));
-    }
-
     public void waitingPayment(ServiceOrder order) throws InvalidTransitionException {
         throw new InvalidTransitionException(String.format(MSG_ERROR, WAITING_PAYMENT.name(), this.name()));
     }
 
     public void deliver(ServiceOrder order) throws InvalidTransitionException {
         throw new InvalidTransitionException(String.format(MSG_ERROR, DELIVERED.name(), this.name()));
+    }
+
+    public void canceled(ServiceOrder order) throws InvalidTransitionException {
+        throw new InvalidTransitionException(String.format(MSG_ERROR, CANCELED.name(), this.name()));
+    }
+
+    public void paymentApproval(ServiceOrder order) throws InvalidTransitionException {
+        throw new InvalidTransitionException(String.format(MSG_ERROR, PAYMENT_APPROVAL.name(), this.name()));
     }
 
     public static List<Status> getStatusesForPendingOrders() {

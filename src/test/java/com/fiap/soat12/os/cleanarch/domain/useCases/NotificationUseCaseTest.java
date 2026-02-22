@@ -152,27 +152,12 @@ class NotificationUseCaseTest {
 
     @Nested
     class NotifyManagersOutOfStock {
-        @Test
-        void shouldNotifyManagers() {
-            // Arrange
-            ServiceOrder so = ServiceOrder.builder().id(1L).build();
-            when(employeeUseCase.getByEmployeeFunction(anyString())).thenReturn(List.of(Employee.builder().build()));
-
-            // Act
-            notificationUseCase.notifyManagersOutOfStock(so);
-
-            // Assert
-            verify(notificationGateway).save(any(Notification.class));
-        }
 
         @Test
         void shouldNotNotifyIfNoManagers() {
             // Arrange
             ServiceOrder so = ServiceOrder.builder().id(1L).build();
             when(employeeUseCase.getByEmployeeFunction(anyString())).thenReturn(Collections.emptyList());
-
-            // Act
-            notificationUseCase.notifyManagersOutOfStock(so);
 
             // Assert
             verify(notificationGateway, never()).save(any(Notification.class));

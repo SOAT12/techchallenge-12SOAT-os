@@ -57,23 +57,9 @@ public class ServiceOrderPresenterTest {
                                 .value(new BigDecimal("50.00"))
                                 .build();
 
-                Stock stock1 = Stock.builder()
-                                .id(UUID.randomUUID())
-                                .toolName("Filtro de óleo")
-                                .quantity(1)
-                                .value(new BigDecimal("30.00"))
-                                .build();
-
-                Stock stock2 = Stock.builder()
-                                .id(UUID.randomUUID())
-                                .toolName("Parafuso")
-                                .quantity(4)
-                                .value(new BigDecimal("5.00"))
-                                .build();
-
                 ServiceOrder order = ServiceOrder.builder()
                                 .id(100L)
-                                .status(Status.FINISHED)
+                                .status(Status.WAITING_FOR_APPROVAL)
                                 .notes("Tudo certo.")
                                 .createdAt(new Date())
                                 .updatedAt(new Date())
@@ -83,7 +69,6 @@ public class ServiceOrderPresenterTest {
                                 .vehicle(vehicle)
                                 .employee(employee)
                                 .services(Set.of(service1, service2))
-                                .stockItems(Set.of(stock1, stock2))
                                 .build();
 
                 // Act
@@ -92,7 +77,7 @@ public class ServiceOrderPresenterTest {
                 // Assert
                 assertNotNull(dto);
                 assertEquals(100L, dto.getId());
-                assertEquals(Status.FINISHED, dto.getStatus());
+                assertEquals(Status.WAITING_FOR_APPROVAL, dto.getStatus());
                 assertEquals("Tudo certo.", dto.getNotes());
                 assertEquals(new BigDecimal("185.00"), dto.getTotalValue());
 
@@ -114,9 +99,6 @@ public class ServiceOrderPresenterTest {
                 assertTrue(dto.getServices().stream().anyMatch(s -> s.getName().equals("Troca de óleo")));
                 assertTrue(dto.getServices().stream().anyMatch(s -> s.getName().equals("Alinhamento")));
 
-                assertEquals(2, dto.getStockItems().size());
-                assertTrue(dto.getStockItems().stream().anyMatch(s -> s.getToolName().equals("Filtro de óleo")));
-                assertTrue(dto.getStockItems().stream().anyMatch(s -> s.getToolName().equals("Parafuso")));
         }
 
         @Test

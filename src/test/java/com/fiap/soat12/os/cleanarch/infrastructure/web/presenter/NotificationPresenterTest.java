@@ -24,7 +24,7 @@ public class NotificationPresenterTest {
         // Arrange
         ServiceOrder serviceOrder = ServiceOrder.builder()
                 .id(100L)
-                .status(Status.FINISHED)
+                .status(Status.WAITING_FOR_APPROVAL)
                 .totalValue(new BigDecimal("250.00"))
                 .build();
 
@@ -49,7 +49,7 @@ public class NotificationPresenterTest {
         NotificationResponseDTO.ServiceOrderDTO expectedServiceOrderDTO =
                 NotificationResponseDTO.ServiceOrderDTO.builder()
                         .id(100L)
-                        .status(Status.FINISHED)
+                        .status(Status.WAITING_FOR_APPROVAL)
                         .totalValue(new BigDecimal("250.00"))
                         .build();
 

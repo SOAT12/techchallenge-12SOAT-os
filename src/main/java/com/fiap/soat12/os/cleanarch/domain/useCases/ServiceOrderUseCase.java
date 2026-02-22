@@ -220,7 +220,7 @@ public class ServiceOrderUseCase {
 
     public ServiceOrder finish(Long id) throws InvalidTransitionException, MessagingException {
         ServiceOrder order = findById(id);
-        order.getStatus().finish(order);
+        order.getStatus().waitingPayment(order);
         notificationUseCase.notifyAttendantsOSCompleted(order);
         ServiceOrder serviceOrder = serviceOrderGateway.save(order);
 
@@ -320,6 +320,8 @@ public class ServiceOrderUseCase {
     }
 
     public void updateStatusOs(OsUpdateDto dto) {
+
+
         serviceOrderJpaRepository.updateStatusById(dto.getOsId(), dto.getNewStatus());
     }
 }

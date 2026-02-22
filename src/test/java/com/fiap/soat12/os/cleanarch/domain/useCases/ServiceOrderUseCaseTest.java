@@ -6,6 +6,7 @@ import com.fiap.soat12.os.cleanarch.domain.model.ServiceOrder;
 import com.fiap.soat12.os.cleanarch.domain.model.Vehicle;
 import com.fiap.soat12.os.cleanarch.exception.NotFoundException;
 import com.fiap.soat12.os.cleanarch.gateway.ServiceOrderGateway;
+import com.fiap.soat12.os.cleanarch.util.Status;
 import com.fiap.soat12.os.dto.serviceorder.ServiceOrderRequestDTO;
 import com.fiap.soat12.os.service.MailClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,9 +42,6 @@ class ServiceOrderUseCaseTest {
 
     @Mock
     private VehicleServiceUseCase vehicleServiceUseCase;
-
-    @Mock
-    private StockUseCase stockUseCase;
 
     @Mock
     MailClient mailClient;
@@ -253,27 +251,6 @@ class ServiceOrderUseCaseTest {
     }
 
     @Nested
-    class UpdateOrder {
-        @Test
-        void shouldUpdateOrder() {
-            // Arrange
-            Long id = 1L;
-            ServiceOrderRequestDTO requestDTO = new ServiceOrderRequestDTO();
-            ServiceOrder existingOrder = ServiceOrder.builder().id(id).services(new java.util.HashSet<>()).stockItems(new java.util.HashSet<>()).build();
-
-            when(serviceOrderGateway.findById(id)).thenReturn(Optional.of(existingOrder));
-            when(serviceOrderGateway.save(existingOrder)).thenReturn(existingOrder);
-
-            // Act
-            ServiceOrder result = serviceOrderUseCase.updateOrder(id, requestDTO);
-
-            // Assert
-            assertNotNull(result);
-            verify(serviceOrderGateway).save(existingOrder);
-        }
-    }
-
-    @Nested
     class DeleteOrderLogically {
         @Test
         void shouldDeleteOrderLogically() {
@@ -396,10 +373,8 @@ class ServiceOrderUseCaseTest {
                 .id(id)
                 .status(com.fiap.soat12.os.cleanarch.util.Status.APPROVED)
                 .build();
-            com.fiap.soat12.os.dto.stock.StockAvailabilityResponseDTO availability = new com.fiap.soat12.os.dto.stock.StockAvailabilityResponseDTO(true, null);
 
             when(serviceOrderGateway.findById(id)).thenReturn(Optional.of(order));
-            when(stockUseCase.getStockAvailability(order)).thenReturn(availability);
             when(serviceOrderGateway.save(order)).thenReturn(order);
             when(employeeUseCase.getByEmployeeFunction(anyString())).thenReturn(List.of(Employee.builder().build()));
             when(serviceOrderGateway.countByEmployeeAndStatusIn(any(), any())).thenReturn(0L);
@@ -434,7 +409,7 @@ class ServiceOrderUseCaseTest {
 
             // Assert
             assertNotNull(result);
-            assertEquals(com.fiap.soat12.os.cleanarch.util.Status.FINISHED, result.getStatus());
+            assertEquals(Status.WAITING_PAYMENT, result.getStatus());
             verify(serviceOrderGateway).save(order);
         }
     }
@@ -447,7 +422,7 @@ class ServiceOrderUseCaseTest {
             Long id = 1L;
             ServiceOrder order = ServiceOrder.builder()
                 .id(id)
-                .status(com.fiap.soat12.os.cleanarch.util.Status.FINISHED)
+                .status(Status.PAYMENT_APPROVAL)
                 .build();
             when(serviceOrderGateway.findById(id)).thenReturn(Optional.of(order));
             when(serviceOrderGateway.save(order)).thenReturn(order);

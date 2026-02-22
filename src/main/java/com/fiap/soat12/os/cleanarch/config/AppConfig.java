@@ -1,23 +1,16 @@
 package com.fiap.soat12.os.cleanarch.config;
 
-import com.fiap.soat12.os.cleanarch.domain.port.CodeGeneratorPort;
-import com.fiap.soat12.os.cleanarch.domain.port.EncryptionPort;
 import com.fiap.soat12.os.cleanarch.domain.port.NotificationPort;
-import com.fiap.soat12.os.cleanarch.domain.port.TokenServicePort;
 import com.fiap.soat12.os.cleanarch.domain.repository.*;
 import com.fiap.soat12.os.cleanarch.domain.useCases.*;
 import com.fiap.soat12.os.cleanarch.gateway.*;
-import com.fiap.soat12.os.cleanarch.infrastructure.adapter.BCryptAdapter;
-import com.fiap.soat12.os.cleanarch.infrastructure.adapter.CodeGeneratorAdapter;
-import com.fiap.soat12.os.cleanarch.infrastructure.adapter.JwtAdapter;
 import com.fiap.soat12.os.cleanarch.infrastructure.adapter.MailClientAdapter;
+import com.fiap.soat12.os.cleanarch.infrastructure.messaging.publisher.SqsEventPublisher;
 import com.fiap.soat12.os.cleanarch.infrastructure.persistence.mapper.*;
 import com.fiap.soat12.os.cleanarch.infrastructure.persistence.repository.*;
 import com.fiap.soat12.os.cleanarch.infrastructure.persistence.repository.jpa.*;
 import com.fiap.soat12.os.cleanarch.infrastructure.web.controller.*;
 import com.fiap.soat12.os.cleanarch.infrastructure.web.presenter.*;
-import com.fiap.soat12.os.cleanarch.util.JwtTokenUtil;
-import com.fiap.soat12.os.config.SessionToken;
 import com.fiap.soat12.os.service.MailClient;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.persistence.EntityManager;
@@ -244,9 +237,11 @@ public class AppConfig {
             VehicleUseCase vehicleUseCase,
             VehicleServiceUseCase vehicleServiceUseCase,
             MailClient mailClient,
-            MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry,
+            SqsEventPublisher sqsEventPublisher) {
+
         return new ServiceOrderUseCase(serviceOrderGateway, employeeUseCase, customerUseCase, notificationUseCase,
-                vehicleUseCase, vehicleServiceUseCase, mailClient, meterRegistry);
+                vehicleUseCase, vehicleServiceUseCase, mailClient, meterRegistry, sqsEventPublisher);
     }
 
     @Bean
@@ -261,47 +256,8 @@ public class AppConfig {
     }
 
     @Bean
-    public EncryptionPort encryptionPort() {
-        return new BCryptAdapter();
-    }
-
-    @Bean
-    public TokenServicePort tokenServicePort(JwtTokenUtil jwtTokenUtil, SessionToken sessionToken) {
-        return new JwtAdapter(jwtTokenUtil, sessionToken);
-    }
-
-    @Bean
     public NotificationPort notificationPort(MailClient mailClient) {
         return new MailClientAdapter(mailClient);
     }
 
-    @Bean
-    public CodeGeneratorPort codeGeneratorPort() {
-        return new CodeGeneratorAdapter();
-    }
-
-    @Bean
-    public PasswordManagementUseCase passwordManagementUseCase(
-            EmployeeGateway employeeGateway,
-            EncryptionPort encryptionPort,
-            CodeGeneratorPort codeGeneratorPort,
-            NotificationPort notificationPort) {
-        return new PasswordManagementUseCase(
-                employeeGateway,
-                encryptionPort,
-                codeGeneratorPort,
-                notificationPort);
-    }
-
-    @Bean
-    public EmployeeAuthUseCase employeeAuthUseCase(
-            EmployeeGateway employeeGateway,
-            EncryptionPort encryptionPort,
-            TokenServicePort tokenServicePort,
-            PasswordManagementUseCase passwordManagementUseCase) {
-        return new EmployeeAuthUseCase(
-                employeeGateway,
-                encryptionPort,
-                tokenServicePort);
-    }
 }

@@ -20,20 +20,7 @@ databaseChangeLog:
           - sqlFile:
               path: vehicleservice/create-table-vehicle_service.sql
               relativeToChangelogFile: true
-    - changeSet:
-        id: create-table-tool-category
-        author: caiohnrq
-        changes:
-          - sqlFile:
-              path: toolCategory/create-table-tool-category.sql
-              relativeToChangelogFile: true
-    - changeSet:
-        id: create-table-stock
-        author: caiohnrq
-        changes:
-          - sqlFile:
-              path: stock/create-table-stock.sql
-              relativeToChangelogFile: true
+
     - changeSet:
         id: create-table-vehicle
         author: caiohnrq
@@ -111,24 +98,5 @@ databaseChangeLog:
           - sqlFile:
               path: employee/alter-table-employee-add-columns.sql
               relativeToChangelogFile: true
-    - changeSet:
-        id: alter-table-tool-category-change-id-type
-        author: caiohnrq
-        changes:
-          - sqlFile:
-              path: toolCategory/alter-table-tool-category-change-id-type.sql
-              relativeToChangelogFile: true
-    - changeSet:
-        id: alter-table-stock-change-id-type
-        author: caiohnrq
-        changes:
-          - sqlFile:
-              path: stock/alter-table-stock-change-id-type.sql
-              relativeToChangelogFile: true
-    - changeSet:
-        id: drop-stock-related-tables
-        author: alexpires1
-        changes:
-          - sqlFile:
-              path: stock/drop-stock-related-tables.sql
-              relativeToChangelogFile: true
+
+

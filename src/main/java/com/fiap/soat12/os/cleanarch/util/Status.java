@@ -13,11 +13,26 @@ public enum Status {
 
     OPENED("Aberta", 6) {
         @Override
+        public void waitForStock(ServiceOrder order) {
+            order.setStatus(WAITING_FOR_STOCK);
+            order.setUpdatedAt(new Date());
+        }
+
+        @Override
         public void diagnose(ServiceOrder order) {
             order.setStatus(IN_DIAGNOSIS);
             order.setUpdatedAt(new Date());
         }
     },
+
+    WAITING_FOR_STOCK("Aguardando Peças", 11) {
+        @Override
+        public void waitForStock(ServiceOrder order) {
+            order.setStatus(IN_DIAGNOSIS);
+            order.setUpdatedAt(new Date());
+        }
+    },
+
     IN_DIAGNOSIS("Em diagnóstico", 4) {
         @Override
         public void waitForApproval(ServiceOrder order) {
@@ -66,6 +81,14 @@ public enum Status {
             order.setStatus(DELIVERED);
         }
     },
+
+    WAITING_PAYMENT("Aguardando pagamento", 9) {
+        @Override
+        public void deliver(ServiceOrder order) {
+            order.setStatus(DELIVERED);
+        }
+    },
+
     DELIVERED("Entregue", 10),
     CANCELED("Cancelada", 7);
 
@@ -81,6 +104,10 @@ public enum Status {
 
     public void diagnose(ServiceOrder order) throws InvalidTransitionException {
         throw new InvalidTransitionException(String.format(MSG_ERROR, IN_DIAGNOSIS.name(), this.name()));
+    }
+
+    public void waitForStock(ServiceOrder order) throws InvalidTransitionException {
+        throw new InvalidTransitionException(String.format(MSG_ERROR, WAITING_FOR_STOCK.name(), this.name()));
     }
 
     public void waitForApproval(ServiceOrder order) throws InvalidTransitionException {

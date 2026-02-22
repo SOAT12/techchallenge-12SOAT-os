@@ -48,7 +48,7 @@ public class DataSourceConfig {
             username = SecretsManager.getInstance().get("username");
             password = SecretsManager.getInstance().get("password");
         } else {
-            url = "jdbc:postgresql://localhost:5432/postgres";
+            url = "jdbc:postgresql://localhost:5432/os_db";
             username = "postgres";
             password = "postgres";
         }

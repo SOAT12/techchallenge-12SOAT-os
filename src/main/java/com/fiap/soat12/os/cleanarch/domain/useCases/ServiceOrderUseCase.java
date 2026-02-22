@@ -4,8 +4,9 @@ import com.fiap.soat12.os.cleanarch.domain.model.*;
 import com.fiap.soat12.os.cleanarch.exception.InvalidTransitionException;
 import com.fiap.soat12.os.cleanarch.exception.NotFoundException;
 import com.fiap.soat12.os.cleanarch.gateway.ServiceOrderGateway;
+import com.fiap.soat12.os.cleanarch.infrastructure.messaging.publisher.SqsEventPublisher;
+import com.fiap.soat12.os.cleanarch.infrastructure.web.presenter.dto.StockItemsDto;
 import com.fiap.soat12.os.cleanarch.util.Status;
-import com.fiap.soat12.os.dto.serviceorder.ServiceOrderFullCreationRequestDTO;
 import com.fiap.soat12.os.dto.serviceorder.ServiceOrderRequestDTO;
 import com.fiap.soat12.os.service.MailClient;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -33,6 +34,7 @@ public class ServiceOrderUseCase {
     private final VehicleServiceUseCase vehicleServiceUseCase;
     private final MailClient mailClient;
     private final MeterRegistry meterRegistry;
+    private final SqsEventPublisher sqsEventPublisher;
 
     public ServiceOrder createServiceOrder(ServiceOrderRequestDTO requestDTO) {
         ServiceOrder serviceOrder = new ServiceOrder();
@@ -52,11 +54,11 @@ public class ServiceOrderUseCase {
         serviceOrder.setEmployee(employee);
 
         mapServicesDetail(requestDTO, serviceOrder);
+        mapStockItemsDetail(requestDTO, serviceOrder);
 
         serviceOrder.setNotes(requestDTO.getNotes());
         serviceOrder.setStatus(Status.OPENED);
-        serviceOrder.setTotalValue(
-                serviceOrder.calculateTotalValue(serviceOrder.getServices()));
+        serviceOrder.setTotalValue(serviceOrder.calculateTotalValue(serviceOrder.getServices()));
 
         ServiceOrder savedOrder = serviceOrderGateway.save(serviceOrder);
         notificationUseCase.notifyMechanicAssignedToOS(savedOrder, employee);
@@ -64,41 +66,20 @@ public class ServiceOrderUseCase {
         return savedOrder;
     }
 
-    public ServiceOrder createServiceOrder(ServiceOrderFullCreationRequestDTO requestDTO) {
-        ServiceOrder serviceOrder = new ServiceOrder();
+    private void mapStockItemsDetail(ServiceOrderRequestDTO request, ServiceOrder order) {
 
-        Customer customer = customerUseCase.createCustomer(requestDTO.getCustomer());
-        Vehicle vehicle = vehicleUseCase.create(requestDTO.getVehicle());
+        List<StockItemsDto.StockUpdateDto> items = request.getStockItems().stream()
+                .map(stockItemDTO -> StockItemsDto.StockUpdateDto.builder()
+                        .id(stockItemDTO.getStockId())
+                        .quantity(stockItemDTO.getRequiredQuantity())
+                        .build())
+                .toList();
 
-        Employee employee = null;
-        if (nonNull(requestDTO.getEmployeeId())) {
-            employee = employeeUseCase.getEmployeeById(requestDTO.getEmployeeId());
-        } else {
-            employee = this.findMostAvailableEmployee();
-        }
+        StockItemsDto stockRemoveItemsDto = new StockItemsDto();
+        stockRemoveItemsDto.setOsId(order.getId());
+        stockRemoveItemsDto.setItems(items);
 
-        serviceOrder.setCustomer(customer);
-        serviceOrder.setVehicle(vehicle);
-        serviceOrder.setEmployee(employee);
-
-        if (requestDTO.getServices() != null) {
-            requestDTO.getServices()
-                    .forEach(serviceDTO -> {
-                        VehicleService vehicleService = vehicleServiceUseCase.create(serviceDTO);
-                        serviceOrder.getServices().add(vehicleService);
-                    });
-        }
-
-        serviceOrder.setNotes(requestDTO.getNotes());
-        serviceOrder.setStatus(Status.OPENED);
-        serviceOrder.setTotalValue(
-                serviceOrder.calculateTotalValue(serviceOrder.getServices()));
-
-        ServiceOrder savedOrder = serviceOrderGateway.save(serviceOrder);
-        notificationUseCase.notifyMechanicAssignedToOS(savedOrder, employee);
-
-        meterRegistry.counter("techchallenge.orders.created", "type", "full_creation").increment();
-        return savedOrder;
+        sqsEventPublisher.publishRemoveStock(stockRemoveItemsDto);
     }
 
     public ServiceOrder findById(Long id) {

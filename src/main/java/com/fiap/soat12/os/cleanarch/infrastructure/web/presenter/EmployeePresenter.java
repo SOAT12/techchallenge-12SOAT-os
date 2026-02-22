@@ -2,7 +2,6 @@ package com.fiap.soat12.os.cleanarch.infrastructure.web.presenter;
 
 import com.fiap.soat12.os.cleanarch.domain.model.Employee;
 import com.fiap.soat12.os.cleanarch.domain.model.EmployeeFunction;
-import com.fiap.soat12.os.cleanarch.util.CryptUtil;
 import com.fiap.soat12.os.dto.employee.EmployeeRequestDTO;
 import com.fiap.soat12.os.dto.employee.EmployeeResponseDTO;
 
@@ -37,7 +36,7 @@ public class EmployeePresenter {
         return Employee.builder()
                 .cpf(dto.getCpf())
                 .name(dto.getName())
-                .password(CryptUtil.bcrypt(dto.getPassword()))
+                .password(dto.getPassword())
                 .phone(dto.getPhone())
                 .email(dto.getEmail())
                 .active(dto.getActive())

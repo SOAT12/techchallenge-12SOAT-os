@@ -1,6 +1,5 @@
 package com.fiap.soat12.os.mapper;
 
-import com.fiap.soat12.os.cleanarch.util.CryptUtil;
 import com.fiap.soat12.os.dto.employee.EmployeeRequestDTO;
 import com.fiap.soat12.os.dto.employee.EmployeeResponseDTO;
 import com.fiap.soat12.os.entity.Employee;
@@ -35,7 +34,7 @@ public class EmployeeMapper {
         return Employee.builder()
                 .cpf(dto.getCpf())
                 .name(dto.getName())
-                .password(CryptUtil.bcrypt(dto.getPassword()))
+                .password(dto.getPassword())
                 .phone(dto.getPhone())
                 .email(dto.getEmail())
                 .active(dto.getActive())

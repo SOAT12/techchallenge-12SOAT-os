@@ -22,11 +22,6 @@ public class ServiceOrderController {
         return serviceOrderPresenter.toServiceOrderResponseDTO(serviceOrder);
     }
 
-    public ServiceOrderFullCreationResponseDTO createOrder(ServiceOrderFullCreationRequestDTO requestDTO) {
-        var serviceOrder = serviceOrderUseCase.createServiceOrder(requestDTO);
-        return serviceOrderPresenter.toServiceOrderFullCreationResponseDTO(serviceOrder.getId());
-    }
-
     public List<ServiceOrderResponseDTO> findAllOrders() {
         return serviceOrderUseCase.findAllOrders().stream()
                 .map(serviceOrderPresenter::toServiceOrderResponseDTO)

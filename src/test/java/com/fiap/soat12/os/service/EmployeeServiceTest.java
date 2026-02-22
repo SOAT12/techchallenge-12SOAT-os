@@ -1,7 +1,5 @@
 package com.fiap.soat12.os.service;
 
-import com.fiap.soat12.os.cleanarch.util.CodeGenerator;
-import com.fiap.soat12.os.cleanarch.util.CryptUtil;
 import com.fiap.soat12.os.cleanarch.util.DateUtils;
 import com.fiap.soat12.os.dto.ChangePasswordRequestDTO;
 import com.fiap.soat12.os.dto.ForgotPasswordRequestDTO;

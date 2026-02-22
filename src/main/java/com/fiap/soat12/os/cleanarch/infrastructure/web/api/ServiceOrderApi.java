@@ -36,17 +36,6 @@ public class ServiceOrderApi {
         return serviceOrderController.createOrder(request);
     }
 
-    @Operation(summary = "Cria uma nova Ordem de Serviço com dados completos", description = "Cria uma nova Ordem de Serviço (OS) informando os dados do cliente, veículo, serviços e peças (itens de estoque)"
-            +
-            "sem depender de registros previamente existentes.")
-    @ApiResponse(responseCode = "201", description = "Ordem de serviço criada com sucesso")
-    @ApiResponse(responseCode = "400", description = "Requisição inválida ou categoria não encontrada")
-    @PostMapping("/full")
-    public ServiceOrderFullCreationResponseDTO createOrder(
-            @Valid @RequestBody ServiceOrderFullCreationRequestDTO request) {
-        return serviceOrderController.createOrder(request);
-    }
-
     @Operation(summary = "Obtém uma ordem de serviço pelo ID", description = "Retorna uma ordem de serviço específico pelo seu ID.")
     @ApiResponse(responseCode = "200", description = "Ordem de serviço encontrada com sucesso")
     @ApiResponse(responseCode = "404", description = "Ordem de serviço não encontrada")

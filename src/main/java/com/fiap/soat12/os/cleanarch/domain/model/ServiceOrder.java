@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Data
@@ -38,6 +39,8 @@ public class ServiceOrder {
     private Date createdAt;
 
     private Date updatedAt;
+
+    private Map<Long, Integer> consumedStocks;
 
     public BigDecimal calculateTotalValue(Set<VehicleService> services) {
         BigDecimal totalValue = BigDecimal.ZERO;

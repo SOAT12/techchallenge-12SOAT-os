@@ -5,8 +5,10 @@ import com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.EmployeeJp
 import com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.ServiceOrderEntity;
 import com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.VehicleJpaEntity;
 import com.fiap.soat12.os.cleanarch.util.Status;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -16,22 +18,27 @@ import java.util.List;
 public interface ServiceOrderJpaRepository
                 extends JpaRepository<ServiceOrderEntity, Long>, JpaSpecificationExecutor<ServiceOrderEntity> {
 
-        @Query("SELECT s FROM ServiceOrderEntity s " +
-                        "WHERE s.status IN :statuses " +
-                        "ORDER BY CASE s.status " +
-                        "WHEN IN_EXECUTION THEN 1 " +
-                        "WHEN WAITING_FOR_APPROVAL THEN 2 " +
-                        "WHEN IN_DIAGNOSIS THEN 3 " +
-                        "WHEN APPROVED THEN 5 " +
-                        "WHEN OPENED THEN 6 " +
-                        "ELSE 7 END, s.createdAt ASC")
-        List<ServiceOrderEntity> findAllFilteredAndSorted(List<Status> statuses);
+    @Query("SELECT s FROM ServiceOrderEntity s " +
+                    "WHERE s.status IN :statuses " +
+                    "ORDER BY CASE s.status " +
+                    "WHEN IN_EXECUTION THEN 1 " +
+                    "WHEN WAITING_FOR_APPROVAL THEN 2 " +
+                    "WHEN IN_DIAGNOSIS THEN 3 " +
+                    "WHEN APPROVED THEN 5 " +
+                    "WHEN OPENED THEN 6 " +
+                    "ELSE 7 END, s.createdAt ASC")
+    List<ServiceOrderEntity> findAllFilteredAndSorted(List<Status> statuses);
 
-        Long countByEmployeeAndStatusIn(EmployeeJpaEntity employee, List<Status> statusList);
+    Long countByEmployeeAndStatusIn(EmployeeJpaEntity employee, List<Status> statusList);
 
-        List<ServiceOrderEntity> findByEmployeeAndStatusIn(EmployeeJpaEntity employee, List<Status> statusList);
+    List<ServiceOrderEntity> findByEmployeeAndStatusIn(EmployeeJpaEntity employee, List<Status> statusList);
 
-        List<ServiceOrderEntity> findByCustomerAndFinishedAtIsNull(CustomerJpaEntity customer);
+    List<ServiceOrderEntity> findByCustomerAndFinishedAtIsNull(CustomerJpaEntity customer);
 
-        List<ServiceOrderEntity> findByVehicleAndFinishedAtIsNull(VehicleJpaEntity vehicle);
+    List<ServiceOrderEntity> findByVehicleAndFinishedAtIsNull(VehicleJpaEntity vehicle);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ServiceOrderEntity s SET s.status = :status, s.updatedAt = CURRENT_TIMESTAMP WHERE s.id = :id")
+    void updateStatusById(Long id, Status status);
 }

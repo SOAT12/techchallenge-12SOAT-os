@@ -24,6 +24,4 @@ public class ServiceOrderStockEntity {
 
     @Column(name = "stock_id", insertable = false, updatable = false)
     private Long externalStockId;
-
-    private Integer quantity;
 }

@@ -238,10 +238,11 @@ public class AppConfig {
             VehicleServiceUseCase vehicleServiceUseCase,
             MailClient mailClient,
             MeterRegistry meterRegistry,
-            SqsEventPublisher sqsEventPublisher) {
+            SqsEventPublisher sqsEventPublisher,
+            ServiceOrderJpaRepository serviceOrderJpaRepository) {
 
         return new ServiceOrderUseCase(serviceOrderGateway, employeeUseCase, customerUseCase, notificationUseCase,
-                vehicleUseCase, vehicleServiceUseCase, mailClient, meterRegistry, sqsEventPublisher);
+                vehicleUseCase, vehicleServiceUseCase, mailClient, meterRegistry, sqsEventPublisher, serviceOrderJpaRepository);
     }
 
     @Bean

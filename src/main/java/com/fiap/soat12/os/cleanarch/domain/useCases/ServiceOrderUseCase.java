@@ -5,6 +5,8 @@ import com.fiap.soat12.os.cleanarch.exception.InvalidTransitionException;
 import com.fiap.soat12.os.cleanarch.exception.NotFoundException;
 import com.fiap.soat12.os.cleanarch.gateway.ServiceOrderGateway;
 import com.fiap.soat12.os.cleanarch.infrastructure.messaging.publisher.SqsEventPublisher;
+import com.fiap.soat12.os.cleanarch.infrastructure.persistence.repository.jpa.ServiceOrderJpaRepository;
+import com.fiap.soat12.os.cleanarch.infrastructure.web.presenter.dto.OsUpdateDto;
 import com.fiap.soat12.os.cleanarch.infrastructure.web.presenter.dto.StockItemsDto;
 import com.fiap.soat12.os.cleanarch.util.Status;
 import com.fiap.soat12.os.dto.serviceorder.ServiceOrderRequestDTO;
@@ -36,6 +38,8 @@ public class ServiceOrderUseCase {
     private final MeterRegistry meterRegistry;
     private final SqsEventPublisher sqsEventPublisher;
 
+    private final ServiceOrderJpaRepository serviceOrderJpaRepository;
+
     public ServiceOrder createServiceOrder(ServiceOrderRequestDTO requestDTO) {
         ServiceOrder serviceOrder = new ServiceOrder();
 
@@ -54,13 +58,15 @@ public class ServiceOrderUseCase {
         serviceOrder.setEmployee(employee);
 
         mapServicesDetail(requestDTO, serviceOrder);
-        mapStockItemsDetail(requestDTO, serviceOrder);
+//        mapStockItemsDetail(requestDTO, serviceOrder);
 
         serviceOrder.setNotes(requestDTO.getNotes());
         serviceOrder.setStatus(Status.OPENED);
         serviceOrder.setTotalValue(serviceOrder.calculateTotalValue(serviceOrder.getServices()));
 
         ServiceOrder savedOrder = serviceOrderGateway.save(serviceOrder);
+        mapStockItemsDetail(requestDTO, savedOrder);
+
         notificationUseCase.notifyMechanicAssignedToOS(savedOrder, employee);
         meterRegistry.counter("techchallenge.orders.created", "type", "standard").increment();
         return savedOrder;
@@ -78,7 +84,7 @@ public class ServiceOrderUseCase {
         StockItemsDto stockRemoveItemsDto = new StockItemsDto();
         stockRemoveItemsDto.setOsId(order.getId());
         stockRemoveItemsDto.setItems(items);
-
+        System.out.println(stockRemoveItemsDto);
         sqsEventPublisher.publishRemoveStock(stockRemoveItemsDto);
     }
 
@@ -174,7 +180,7 @@ public class ServiceOrderUseCase {
         String subject = order.getCustomer().getName()
                 + " Seu Orçamento de Serviços está Pronto! (Aprovação Necessária)";
 
-        mailClient.sendMail(order.getCustomer().getEmail(), subject, "mailTemplateServices", variables);
+//        mailClient.sendMail(order.getCustomer().getEmail(), subject, "mailTemplateServices", variables);
 
         return serviceOrder;
     }
@@ -227,7 +233,7 @@ public class ServiceOrderUseCase {
 
         String subject = order.getCustomer().getName() + " Seus serviços solicitados foram finalizados";
 
-        mailClient.sendMail(order.getCustomer().getEmail(), subject, "mailTemplateServiceFinish", variables);
+//        mailClient.sendMail(order.getCustomer().getEmail(), subject, "mailTemplateServiceFinish", variables);
 
         if (order.getCreatedAt() != null) {
             long durationSeconds = (new Date().getTime() - order.getCreatedAt().getTime()) / 1000;
@@ -313,4 +319,7 @@ public class ServiceOrderUseCase {
                 .orElse(null);
     }
 
+    public void updateStatusOs(OsUpdateDto dto) {
+        serviceOrderJpaRepository.updateStatusById(dto.getOsId(), dto.getNewStatus());
+    }
 }

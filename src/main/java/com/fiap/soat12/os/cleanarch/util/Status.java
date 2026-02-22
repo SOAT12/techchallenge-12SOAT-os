@@ -77,8 +77,8 @@ public enum Status {
     },
     FINISHED("Finalizada", 9) {
         @Override
-        public void deliver(ServiceOrder order) {
-            order.setStatus(DELIVERED);
+        public void waitingPayment(ServiceOrder order) {
+            order.setStatus(WAITING_PAYMENT);
         }
     },
 
@@ -128,6 +128,10 @@ public enum Status {
 
     public void finish(ServiceOrder order) throws InvalidTransitionException {
         throw new InvalidTransitionException(String.format(MSG_ERROR, FINISHED.name(), this.name()));
+    }
+
+    public void waitingPayment(ServiceOrder order) throws InvalidTransitionException {
+        throw new InvalidTransitionException(String.format(MSG_ERROR, WAITING_PAYMENT.name(), this.name()));
     }
 
     public void deliver(ServiceOrder order) throws InvalidTransitionException {

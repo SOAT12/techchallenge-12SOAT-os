@@ -116,8 +116,28 @@ public class ServiceOrderRepositoryImpl implements ServiceOrderRepository {
 //            }).collect(Collectors.toSet());
 
         var entity = serviceOrderMapper.toServiceOrderEntity(serviceOrder, customer, vehicle, employee, services);
-        var savedServiceOrder = serviceOrderJpaRepository.save(entity);
-        return serviceOrderMapper.toServiceOrder(savedServiceOrder);
+
+        if (serviceOrder.getStockItems() != null) {
+            Set<ServiceOrderStockEntity> stockEntities = serviceOrder.getStockItems().stream()
+                    .map(stock -> {
+                        var id = new ServiceOrderStockIdEntity(serviceOrder.getId(), stock.getStockId());
+                        return ServiceOrderStockEntity.builder()
+                                .id(id)
+                                .serviceOrder(entity) // <-- MUITO IMPORTANTE: Vincula a OS à peça para o Cascade funcionar
+                                .externalStockId(stock.getStockId())
+                                .requiredQuantity(stock.getRequiredQuantity())
+                                .unitPrice(stock.getUnitPrice())
+                                .build();
+                    }).collect(Collectors.toSet());
+
+            entity.setStockItems(stockEntities);
+        }
+
+        var savedEntity = serviceOrderJpaRepository.save(entity);
+        return serviceOrderMapper.toServiceOrder(savedEntity);
+//        var entity = serviceOrderMapper.toServiceOrderEntity(serviceOrder, customer, vehicle, employee, services);
+//        var savedServiceOrder = serviceOrderJpaRepository.save(entity);
+//        return serviceOrderMapper.toServiceOrder(savedServiceOrder);
     }
 
 }

@@ -9,6 +9,7 @@ import com.fiap.soat12.os.cleanarch.infrastructure.persistence.repository.jpa.Se
 import com.fiap.soat12.os.cleanarch.infrastructure.web.presenter.dto.OsUpdateDto;
 import com.fiap.soat12.os.cleanarch.infrastructure.web.presenter.dto.StockItemsDto;
 import com.fiap.soat12.os.cleanarch.util.Status;
+import com.fiap.soat12.os.dto.serviceorder.CheckoutBillingRequestDTO;
 import com.fiap.soat12.os.dto.serviceorder.ServiceOrderRequestDTO;
 import com.fiap.soat12.os.service.MailClient;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -16,9 +17,12 @@ import io.micrometer.core.instrument.Timer;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.nonNull;
 
@@ -40,52 +44,74 @@ public class ServiceOrderUseCase {
 
     private final ServiceOrderJpaRepository serviceOrderJpaRepository;
 
+    @Value("${app.url.billing}")
+    private String url_billing;
+
     public ServiceOrder createServiceOrder(ServiceOrderRequestDTO requestDTO) {
         ServiceOrder serviceOrder = new ServiceOrder();
 
         Customer customer = customerUseCase.getCustomerById(requestDTO.getCustomerId());
         Vehicle vehicle = vehicleUseCase.getVehicleById(requestDTO.getVehicleId());
 
-        Employee employee = null;
-        if (nonNull(requestDTO.getEmployeeId())) {
-            employee = employeeUseCase.getEmployeeById(requestDTO.getEmployeeId());
-        } else {
-            employee = this.findMostAvailableEmployee();
-        }
+        Employee employee = nonNull(requestDTO.getEmployeeId())
+                ? employeeUseCase.getEmployeeById(requestDTO.getEmployeeId())
+                : this.findMostAvailableEmployee();
 
         serviceOrder.setCustomer(customer);
         serviceOrder.setVehicle(vehicle);
         serviceOrder.setEmployee(employee);
 
+        // 1. Mapeia para o domínio ANTES de salvar (para persistir no banco)
         mapServicesDetail(requestDTO, serviceOrder);
-//        mapStockItemsDetail(requestDTO, serviceOrder);
+        mapStockItemsToDomain(requestDTO, serviceOrder);
 
         serviceOrder.setNotes(requestDTO.getNotes());
         serviceOrder.setStatus(Status.OPENED);
         serviceOrder.setTotalValue(serviceOrder.calculateTotalValue(serviceOrder.getServices()));
 
+        // 2. Salva no banco de dados com tudo preenchido
         ServiceOrder savedOrder = serviceOrderGateway.save(serviceOrder);
-        mapStockItemsDetail(requestDTO, savedOrder);
+
+        // 3. Dispara a notificação SQS (agora extraída para um método limpo)
+        publishSqsStockRemoval(savedOrder);
 
         notificationUseCase.notifyMechanicAssignedToOS(savedOrder, employee);
         meterRegistry.counter("techchallenge.orders.created", "type", "standard").increment();
         return savedOrder;
     }
 
-    private void mapStockItemsDetail(ServiceOrderRequestDTO request, ServiceOrder order) {
+    private void mapStockItemsToDomain(ServiceOrderRequestDTO request, ServiceOrder order) {
+        if (request.getStockItems() == null) return;
 
-        List<StockItemsDto.StockUpdateDto> items = request.getStockItems().stream()
-                .map(stockItemDTO -> StockItemsDto.StockUpdateDto.builder()
-                        .id(stockItemDTO.getStockId())
-                        .quantity(stockItemDTO.getRequiredQuantity())
+        Set<StockItem> items = request.getStockItems().stream()
+                .map(dto -> StockItem.builder()
+                        .stockId(dto.getStockId())
+                        .requiredQuantity(dto.getRequiredQuantity())
+                        .unitPrice(BigDecimal.ZERO)
+                        .build())
+                .collect(Collectors.toSet());
+
+        order.setStockItems(items);
+    }
+
+    // Método 2: Exclusivo para disparar a baixa no estoque via SQS
+    private void publishSqsStockRemoval(ServiceOrder savedOrder) {
+        if (savedOrder.getStockItems() == null || savedOrder.getStockItems().isEmpty()) {
+            return; // Se não tem peça, não manda SQS
+        }
+
+        List<StockItemsDto.StockUpdateDto> updateItems = savedOrder.getStockItems().stream()
+                .map(stock -> StockItemsDto.StockUpdateDto.builder()
+                        .id(stock.getStockId())
+                        .quantity(stock.getRequiredQuantity())
                         .build())
                 .toList();
 
-        StockItemsDto stockRemoveItemsDto = new StockItemsDto();
-        stockRemoveItemsDto.setOsId(order.getId());
-        stockRemoveItemsDto.setItems(items);
-        System.out.println(stockRemoveItemsDto);
-        sqsEventPublisher.publishRemoveStock(stockRemoveItemsDto);
+        StockItemsDto eventDto = new StockItemsDto();
+        eventDto.setOsId(savedOrder.getId());
+        eventDto.setItems(updateItems);
+
+        sqsEventPublisher.publishRemoveStock(eventDto);
     }
 
     public ServiceOrder findById(Long id) {
@@ -235,6 +261,62 @@ public class ServiceOrderUseCase {
 
 //        mailClient.sendMail(order.getCustomer().getEmail(), subject, "mailTemplateServiceFinish", variables);
 
+        CheckoutBillingRequestDTO checkoutDTO = new CheckoutBillingRequestDTO();
+        checkoutDTO.setServiceOrderId(order.getId());
+        checkoutDTO.setTotalAmount(new BigDecimal("10.00"));
+
+        CheckoutBillingRequestDTO.CustomerDTO customer = new CheckoutBillingRequestDTO.CustomerDTO(
+                order.getCustomer().getId(),
+                order.getCustomer().getName(),
+                order.getCustomer().getCpf(),
+                order.getCustomer().getEmail()
+        );
+        checkoutDTO.setCustomer(customer);
+
+        checkoutDTO.setResponseUrls(new CheckoutBillingRequestDTO.ResponseUrlsDTO(
+                "https://trinh-dispensible-instructively.ngrok-free.dev/api/v1/webhooks/mercadopago",
+                "https://trinh-dispensible-instructively.ngrok-free.dev/checkout/failure",
+                "https://trinh-dispensible-instructively.ngrok-free.dev/checkout/pending"
+        ));
+
+        List<CheckoutBillingRequestDTO.ItemDTO> itensFalsos = List.of(
+                new CheckoutBillingRequestDTO.ItemDTO(
+                        999L,                      // ID falso
+                        "Troca de Óleo Falsa",     // Nome falso
+                        1,                         // Quantidade falsa
+                        new BigDecimal("10.00")    // Preço falso
+                )
+
+        );
+        checkoutDTO.setItems(itensFalsos);
+//        List<CheckoutBillingRequestDTO.ItemDTO> items = order.getServices().stream()
+//                .map(s -> new CheckoutBillingRequestDTO.ItemDTO(s.getId(), s.getName(), 1, s.getPrice()))
+//                .toList();
+//        checkoutDTO.setItems(items);
+
+        try {
+            // 1. Logando o Body que será enviado
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            // O writerWithDefaultPrettyPrinter() deixa o JSON formatado com quebras de linha e recuos
+            String jsonEnviado = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(checkoutDTO);
+
+            System.out.println("==================================================");
+            System.out.println("BODY ENVIADO PARA A API DO MERCADO PAGO:");
+            System.out.println(jsonEnviado);
+            System.out.println("==================================================");
+
+            // 2. Fazendo a chamada
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
+            org.springframework.http.ResponseEntity<String> response = restTemplate.postForEntity(url_billing, checkoutDTO, String.class);
+
+            System.out.println("Resposta do Mercado Pago (Status " + response.getStatusCode() + "): " + response.getBody());
+
+        } catch (Exception e) {
+            System.err.println("Erro ao chamar a API de Billing: " + e.getMessage());
+            e.printStackTrace(); // Isso vai te mostrar a stack trace inteira caso dê erro 400 ou 500 na chamada
+        }
+
         if (order.getCreatedAt() != null) {
             long durationSeconds = (new Date().getTime() - order.getCreatedAt().getTime()) / 1000;
 
@@ -320,8 +402,6 @@ public class ServiceOrderUseCase {
     }
 
     public void updateStatusOs(OsUpdateDto dto) {
-
-
         serviceOrderJpaRepository.updateStatusById(dto.getOsId(), dto.getNewStatus());
     }
 }

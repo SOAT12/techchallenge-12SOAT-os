@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.io.Serializable;
+import java.util.UUID;
 
 @Embeddable
 @Data
@@ -19,5 +20,5 @@ public class ServiceOrderStockIdEntity implements Serializable {
     private Long serviceOrderId;
 
     @Column(name = "stock_id")
-    private Long stockId;
+    private UUID stockId;
 }

@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.util.UUID;
+
 @Entity
 @Table(name = "service_order_stock")
 @Data
@@ -23,5 +26,11 @@ public class ServiceOrderStockEntity {
     private ServiceOrderEntity serviceOrder;
 
     @Column(name = "stock_id", insertable = false, updatable = false)
-    private Long externalStockId;
+    private UUID externalStockId;
+
+    @Column(name = "quantity", nullable = false)
+    private Integer requiredQuantity;
+
+    @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal unitPrice;
 }

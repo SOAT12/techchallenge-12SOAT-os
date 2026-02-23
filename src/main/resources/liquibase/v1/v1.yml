@@ -98,5 +98,18 @@ databaseChangeLog:
           - sqlFile:
               path: employee/alter-table-employee-add-columns.sql
               relativeToChangelogFile: true
+    - changeSet:
+        id: add-table-service-order-stock-column
+        author: alexpires1
+        changes:
+          - sqlFile:
+              path: serviceOrder/add-table-service-order-stock-column.sql
+              relativeToChangelogFile: true
 
-
+    - changeSet:
+        id: alter-table-service-order-stock-uuid
+        author: alexpires1
+        changes:
+          - sqlFile:
+              path: serviceOrder/alter-table-service-order-stock-uuid.sql
+              relativeToChangelogFile: true

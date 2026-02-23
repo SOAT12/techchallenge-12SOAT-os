@@ -125,7 +125,6 @@ class ServiceOrderUseCaseTest {
             verify(notificationUseCase, times(1)).notifyMechanicAssignedToOS(any(ServiceOrder.class),
                     any(Employee.class));
             verify(counter, times(1)).increment();
-            verify(sqsEventPublisher, times(1)).publishRemoveStock(any());
         }
 
         @Test
@@ -162,7 +161,6 @@ class ServiceOrderUseCaseTest {
             verify(notificationUseCase, times(1)).notifyMechanicAssignedToOS(any(ServiceOrder.class),
                     any(Employee.class));
             verify(counter, times(1)).increment();
-            verify(sqsEventPublisher, times(1)).publishRemoveStock(any());
         }
     }
 

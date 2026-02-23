@@ -40,7 +40,8 @@ public class ServiceOrder {
 
     private Date updatedAt;
 
-    private Map<Long, Integer> consumedStocks;
+    @Builder.Default
+    private Set<StockItem> stockItems = new HashSet<>();
 
     public BigDecimal calculateTotalValue(Set<VehicleService> services) {
         BigDecimal totalValue = BigDecimal.ZERO;

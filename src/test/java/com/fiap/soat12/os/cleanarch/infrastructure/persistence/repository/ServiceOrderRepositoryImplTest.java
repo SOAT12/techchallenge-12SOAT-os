@@ -1,30 +1,33 @@
 package com.fiap.soat12.os.cleanarch.infrastructure.persistence.repository;
 
-import com.fiap.soat12.os.cleanarch.domain.model.ServiceOrder;
-import com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.ServiceOrderEntity;
-import com.fiap.soat12.os.cleanarch.infrastructure.persistence.mapper.CustomerMapper;
-import com.fiap.soat12.os.cleanarch.infrastructure.persistence.mapper.EmployeeMapper;
-import com.fiap.soat12.os.cleanarch.infrastructure.persistence.mapper.ServiceOrderMapper;
-import com.fiap.soat12.os.cleanarch.infrastructure.persistence.mapper.VehicleMapper;
+import com.fiap.soat12.os.cleanarch.domain.model.*;
+import com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.*;
+import com.fiap.soat12.os.cleanarch.infrastructure.persistence.mapper.*;
 import com.fiap.soat12.os.cleanarch.infrastructure.persistence.repository.jpa.ServiceOrderJpaRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
+@ExtendWith(MockitoExtension.class) // Substitui o MockitoAnnotations.openMocks(this)
 class ServiceOrderRepositoryImplTest {
 
     @Mock
@@ -48,23 +51,15 @@ class ServiceOrderRepositoryImplTest {
     @InjectMocks
     private ServiceOrderRepositoryImpl serviceOrderRepository;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Nested
     class FindAll {
         @Test
         void shouldFindAll() {
-            // Arrange
             when(serviceOrderJpaRepository.findAll()).thenReturn(List.of(new ServiceOrderEntity()));
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 
-            // Act
             List<ServiceOrder> result = serviceOrderRepository.findAll();
 
-            // Assert
             assertFalse(result.isEmpty());
             verify(serviceOrderJpaRepository).findAll();
         }
@@ -74,52 +69,94 @@ class ServiceOrderRepositoryImplTest {
     class FindById {
         @Test
         void shouldFindById() {
-            // Arrange
             Long id = 1L;
             when(serviceOrderJpaRepository.findById(id)).thenReturn(Optional.of(new ServiceOrderEntity()));
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 
-            // Act
             Optional<ServiceOrder> result = serviceOrderRepository.findById(id);
 
-            // Assert
-            assertNotNull(result);
+            assertTrue(result.isPresent());
             verify(serviceOrderJpaRepository).findById(id);
         }
     }
 
     @Nested
     class Save {
-        @Test
-        void shouldSave() {
-            // Arrange
-            ServiceOrder serviceOrder = new ServiceOrder();
-            serviceOrder.setCustomer(com.fiap.soat12.os.cleanarch.domain.model.Customer.builder().id(1L).build());
-            serviceOrder.setVehicle(com.fiap.soat12.os.cleanarch.domain.model.Vehicle.builder().id(1L).build());
-            serviceOrder.setEmployee(com.fiap.soat12.os.cleanarch.domain.model.Employee.builder().id(1L).build());
-            serviceOrder.setServices(new java.util.HashSet<>());
 
-            when(entityManager.getReference(any(), anyLong())).thenAnswer(i -> {
-                Class<?> clazz = i.getArgument(0);
-                if (clazz.equals(com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.CustomerJpaEntity.class)) {
-                    return new com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.CustomerJpaEntity();
-                } else if (clazz.equals(com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.VehicleJpaEntity.class)) {
-                    return new com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.VehicleJpaEntity();
-                } else if (clazz.equals(com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.EmployeeJpaEntity.class)) {
-                    return new com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.EmployeeJpaEntity();
-                }
-                return new Object();
-            });
-            when(serviceOrderMapper.toServiceOrderEntity(any(), any(), any(), any(), any())).thenReturn(new ServiceOrderEntity());
-            when(serviceOrderJpaRepository.save(any())).thenReturn(new ServiceOrderEntity());
-            when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
+        private ServiceOrder serviceOrder;
+        private ServiceOrderEntity serviceOrderEntity;
+
+        @BeforeEach
+        void setUpSave() {
+            // Setup base para o Domínio
+            serviceOrder = new ServiceOrder();
+            serviceOrder.setId(10L);
+            serviceOrder.setCustomer(Customer.builder().id(1L).build());
+            serviceOrder.setVehicle(Vehicle.builder().id(1L).build());
+            serviceOrder.setEmployee(Employee.builder().id(1L).build());
+
+            VehicleService service = VehicleService.builder()
+            .id(1L)
+            .build();
+            serviceOrder.setServices(Set.of(service));
+
+            // Setup base para a Entidade
+            serviceOrderEntity = new ServiceOrderEntity();
+            serviceOrderEntity.setId(10L);
+        }
+
+        @Test
+        void shouldSaveWithStockItems() {
+            // Arrange
+            StockItem stockItem = new StockItem(UUID.randomUUID(), 2, new BigDecimal("50.00"));
+            serviceOrder.setStockItems(Set.of(stockItem));
+
+            // Usando lenient() e matchers genéricos para evitar a UnnecessaryStubbingException
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(CustomerJpaEntity.class), any())).thenReturn(new CustomerJpaEntity());
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(VehicleJpaEntity.class), any())).thenReturn(new VehicleJpaEntity());
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(EmployeeJpaEntity.class), any())).thenReturn(new EmployeeJpaEntity());
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(VehicleServiceJpaEntity.class), any())).thenReturn(new VehicleServiceJpaEntity());
+
+            org.mockito.Mockito.lenient().when(serviceOrderMapper.toServiceOrderEntity(any(), any(), any(), any(), any()))
+                    .thenReturn(serviceOrderEntity);
+
+            org.mockito.Mockito.lenient().when(serviceOrderJpaRepository.save(any())).thenReturn(serviceOrderEntity);
+            org.mockito.Mockito.lenient().when(serviceOrderMapper.toServiceOrder(any())).thenReturn(serviceOrder);
 
             // Act
             ServiceOrder result = serviceOrderRepository.save(serviceOrder);
 
             // Assert
             assertNotNull(result);
-            verify(serviceOrderJpaRepository).save(any());
+            verify(serviceOrderJpaRepository, times(1)).save(serviceOrderEntity);
+            assertNotNull(serviceOrderEntity.getStockItems());
+            assertEquals(1, serviceOrderEntity.getStockItems().size());
+        }
+
+        @Test
+        void shouldSaveWithoutStockItems() {
+            // Arrange
+            serviceOrder.setStockItems(null);
+
+            // Usando lenient() e matchers genéricos para evitar a UnnecessaryStubbingException
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(CustomerJpaEntity.class), any())).thenReturn(new CustomerJpaEntity());
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(VehicleJpaEntity.class), any())).thenReturn(new VehicleJpaEntity());
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(EmployeeJpaEntity.class), any())).thenReturn(new EmployeeJpaEntity());
+            org.mockito.Mockito.lenient().when(entityManager.getReference(eq(VehicleServiceJpaEntity.class), any())).thenReturn(new VehicleServiceJpaEntity());
+
+            org.mockito.Mockito.lenient().when(serviceOrderMapper.toServiceOrderEntity(any(), any(), any(), any(), any()))
+                    .thenReturn(serviceOrderEntity);
+
+            org.mockito.Mockito.lenient().when(serviceOrderJpaRepository.save(any())).thenReturn(serviceOrderEntity);
+            org.mockito.Mockito.lenient().when(serviceOrderMapper.toServiceOrder(any())).thenReturn(serviceOrder);
+
+            // Act
+            ServiceOrder result = serviceOrderRepository.save(serviceOrder);
+
+            // Assert
+            assertNotNull(result);
+            verify(serviceOrderJpaRepository, times(1)).save(serviceOrderEntity);
+            assertNull(serviceOrderEntity.getStockItems());
         }
     }
 
@@ -127,14 +164,11 @@ class ServiceOrderRepositoryImplTest {
     class FindAllFilteredAndSorted {
         @Test
         void shouldFindAllFilteredAndSorted() {
-            // Arrange
             when(serviceOrderJpaRepository.findAllFilteredAndSorted(any())).thenReturn(List.of(new ServiceOrderEntity()));
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 
-            // Act
             List<ServiceOrder> result = serviceOrderRepository.findAllFilteredAndSorted(List.of());
 
-            // Assert
             assertFalse(result.isEmpty());
             verify(serviceOrderJpaRepository).findAllFilteredAndSorted(any());
         }
@@ -144,14 +178,11 @@ class ServiceOrderRepositoryImplTest {
     class FindAllWithFilters {
         @Test
         void shouldFindAllWithFilters() {
-            // Arrange
             when(serviceOrderJpaRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class))).thenReturn(List.of(new ServiceOrderEntity()));
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 
-            // Act
             List<ServiceOrder> result = serviceOrderRepository.findAllWithFilters(null, null, null);
 
-            // Assert
             assertFalse(result.isEmpty());
             verify(serviceOrderJpaRepository).findAll(any(org.springframework.data.jpa.domain.Specification.class));
         }
@@ -161,14 +192,11 @@ class ServiceOrderRepositoryImplTest {
     class CountByEmployeeAndStatusIn {
         @Test
         void shouldCountByEmployeeAndStatusIn() {
-            // Arrange
-            when(employeeMapper.toEmployeeJpaEntity(any())).thenReturn(new com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.EmployeeJpaEntity());
+            when(employeeMapper.toEmployeeJpaEntity(any())).thenReturn(new EmployeeJpaEntity());
             when(serviceOrderJpaRepository.countByEmployeeAndStatusIn(any(), any())).thenReturn(1L);
 
-            // Act
-            Long result = serviceOrderRepository.countByEmployeeAndStatusIn(com.fiap.soat12.os.cleanarch.domain.model.Employee.builder().build(), List.of());
+            Long result = serviceOrderRepository.countByEmployeeAndStatusIn(Employee.builder().build(), List.of());
 
-            // Assert
             assertNotNull(result);
             verify(serviceOrderJpaRepository).countByEmployeeAndStatusIn(any(), any());
         }
@@ -178,15 +206,12 @@ class ServiceOrderRepositoryImplTest {
     class FindByEmployeeAndStatusIn {
         @Test
         void shouldFindByEmployeeAndStatusIn() {
-            // Arrange
-            when(employeeMapper.toEmployeeJpaEntity(any())).thenReturn(new com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.EmployeeJpaEntity());
+            when(employeeMapper.toEmployeeJpaEntity(any())).thenReturn(new EmployeeJpaEntity());
             when(serviceOrderJpaRepository.findByEmployeeAndStatusIn(any(), any())).thenReturn(List.of(new ServiceOrderEntity()));
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 
-            // Act
-            List<ServiceOrder> result = serviceOrderRepository.findByEmployeeAndStatusIn(com.fiap.soat12.os.cleanarch.domain.model.Employee.builder().build(), List.of());
+            List<ServiceOrder> result = serviceOrderRepository.findByEmployeeAndStatusIn(Employee.builder().build(), List.of());
 
-            // Assert
             assertFalse(result.isEmpty());
             verify(serviceOrderJpaRepository).findByEmployeeAndStatusIn(any(), any());
         }
@@ -196,15 +221,12 @@ class ServiceOrderRepositoryImplTest {
     class FindByCustomerAndFinishedAtIsNull {
         @Test
         void shouldFindByCustomerAndFinishedAtIsNull() {
-            // Arrange
-            when(customerMapper.toCustomerJpaEntity(any())).thenReturn(new com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.CustomerJpaEntity());
+            when(customerMapper.toCustomerJpaEntity(any())).thenReturn(new CustomerJpaEntity());
             when(serviceOrderJpaRepository.findByCustomerAndFinishedAtIsNull(any())).thenReturn(List.of(new ServiceOrderEntity()));
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 
-            // Act
-            List<ServiceOrder> result = serviceOrderRepository.findByCustomerAndFinishedAtIsNull(com.fiap.soat12.os.cleanarch.domain.model.Customer.builder().build());
+            List<ServiceOrder> result = serviceOrderRepository.findByCustomerAndFinishedAtIsNull(Customer.builder().build());
 
-            // Assert
             assertFalse(result.isEmpty());
             verify(serviceOrderJpaRepository).findByCustomerAndFinishedAtIsNull(any());
         }
@@ -214,15 +236,12 @@ class ServiceOrderRepositoryImplTest {
     class FindByVehicleAndFinishedAtIsNull {
         @Test
         void shouldFindByVehicleAndFinishedAtIsNull() {
-            // Arrange
-            when(vehicleMapper.toVehicleJpaEntity(any())).thenReturn(new com.fiap.soat12.os.cleanarch.infrastructure.persistence.entity.VehicleJpaEntity());
+            when(vehicleMapper.toVehicleJpaEntity(any())).thenReturn(new VehicleJpaEntity());
             when(serviceOrderJpaRepository.findByVehicleAndFinishedAtIsNull(any())).thenReturn(List.of(new ServiceOrderEntity()));
             when(serviceOrderMapper.toServiceOrder(any())).thenReturn(new ServiceOrder());
 
-            // Act
-            List<ServiceOrder> result = serviceOrderRepository.findByVehicleAndFinishedAtIsNull(com.fiap.soat12.os.cleanarch.domain.model.Vehicle.builder().build());
+            List<ServiceOrder> result = serviceOrderRepository.findByVehicleAndFinishedAtIsNull(Vehicle.builder().build());
 
-            // Assert
             assertFalse(result.isEmpty());
             verify(serviceOrderJpaRepository).findByVehicleAndFinishedAtIsNull(any());
         }

@@ -20,7 +20,7 @@ spec:
         image: 258531703731.dkr.ecr.us-east-1.amazonaws.com/os-api:latest # This will be your registry image url
         imagePullPolicy: Always
         ports:
-        - containerPort: 8080
+        - containerPort: 8082
         envFrom:
           - secretRef:
               name: os-secrets

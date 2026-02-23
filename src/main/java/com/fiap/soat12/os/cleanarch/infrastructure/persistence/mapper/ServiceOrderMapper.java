@@ -38,6 +38,20 @@ public class ServiceOrderMapper {
             }
         }
 
+        if (entity.getStockItems() != null) {
+            Set<com.fiap.soat12.os.cleanarch.domain.model.StockItem> stockItems = new HashSet<>();
+            for (ServiceOrderStockEntity stockEntity : entity.getStockItems()) {
+                com.fiap.soat12.os.cleanarch.domain.model.StockItem stockItem =
+                        com.fiap.soat12.os.cleanarch.domain.model.StockItem.builder()
+                                .stockId(stockEntity.getExternalStockId())
+                                .requiredQuantity(stockEntity.getRequiredQuantity())
+                                .unitPrice(stockEntity.getUnitPrice()) // Use zero aqui se não tiver esse campo ainda
+                                .build();
+                stockItems.add(stockItem);
+            }
+            serviceOrder.setStockItems(stockItems);
+        }
+
         return serviceOrder;
     }
 

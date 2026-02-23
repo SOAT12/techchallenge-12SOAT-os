@@ -314,7 +314,6 @@ public class ServiceOrderUseCase {
 
         } catch (Exception e) {
             System.err.println("Erro ao chamar a API de Billing: " + e.getMessage());
-            e.printStackTrace(); // Isso vai te mostrar a stack trace inteira caso dê erro 400 ou 500 na chamada
         }
 
         if (order.getCreatedAt() != null) {

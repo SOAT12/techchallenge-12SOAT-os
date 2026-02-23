@@ -107,14 +107,6 @@ public class ServiceOrderRepositoryImpl implements ServiceOrderRepository {
                 return new ServiceOrderVehicleServiceEntity(id, null, vehicleServiceJpa);
             }).collect(Collectors.toSet());
 
-//        Set<ServiceOrderStockEntity> stockItems = serviceOrder.getStockItems().stream()
-//            .map(stock -> {
-//                var stockJpa = entityManager.getReference(StockEntity.class, stock.getId());
-//
-//                var id = new ServiceOrderStockIdEntity(null, stock.getId());
-//                return new ServiceOrderStockEntity(id, null, stockJpa);
-//            }).collect(Collectors.toSet());
-
         var entity = serviceOrderMapper.toServiceOrderEntity(serviceOrder, customer, vehicle, employee, services);
 
         if (serviceOrder.getStockItems() != null) {
@@ -123,7 +115,7 @@ public class ServiceOrderRepositoryImpl implements ServiceOrderRepository {
                         var id = new ServiceOrderStockIdEntity(serviceOrder.getId(), stock.getStockId());
                         return ServiceOrderStockEntity.builder()
                                 .id(id)
-                                .serviceOrder(entity) // <-- MUITO IMPORTANTE: Vincula a OS à peça para o Cascade funcionar
+                                .serviceOrder(entity)
                                 .externalStockId(stock.getStockId())
                                 .requiredQuantity(stock.getRequiredQuantity())
                                 .unitPrice(stock.getUnitPrice())
@@ -135,9 +127,6 @@ public class ServiceOrderRepositoryImpl implements ServiceOrderRepository {
 
         var savedEntity = serviceOrderJpaRepository.save(entity);
         return serviceOrderMapper.toServiceOrder(savedEntity);
-//        var entity = serviceOrderMapper.toServiceOrderEntity(serviceOrder, customer, vehicle, employee, services);
-//        var savedServiceOrder = serviceOrderJpaRepository.save(entity);
-//        return serviceOrderMapper.toServiceOrder(savedServiceOrder);
     }
 
 }
